@@ -674,6 +674,33 @@ body::after {
     gap: var(--space-xs);
 }
 
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.connection-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffa500;
+    animation: pulse 2s infinite;
+}
+
+.connection-status.connected .connection-dot {
+    background: #4CAF50;
+    animation: none;
+}
+
+.connection-status.disconnected .connection-dot {
+    background: #f44336;
+    animation: pulse 1s infinite;
+}
+
 .chat-actions {
     margin-left: auto;
     display: flex;

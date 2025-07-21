@@ -14,13 +14,25 @@ const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        allowedHeaders: ["*"],
+        credentials: true
+    },
+    allowEIO3: true,
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
@@ -334,12 +346,15 @@ io.on('connection', (socket) => {
     });
 
     // Handle private messages
-    socket.on('private_message', async (data) => {
+    socket.on('private_message', async (data, callback) => {
         try {
             const { receiverId, content, messageType, emotionData, imageUrl } = data;
             const senderData = connectedUsers.get(socket.id);
 
-            if (!senderData) return;
+            if (!senderData) {
+                if (callback) callback({ error: 'User not found' });
+                return;
+            }
 
             // Save message to database
             const message = new Message({
@@ -366,19 +381,26 @@ io.on('connection', (socket) => {
 
             // Send back to sender
             socket.emit('message_sent', message);
+            
+            // Acknowledge success
+            if (callback) callback({ success: true });
         } catch (error) {
             console.error('Error in private_message:', error);
             socket.emit('message_error', { error: 'Failed to send message' });
+            if (callback) callback({ error: 'Failed to send message' });
         }
     });
 
     // Handle self messages (Talk to yourself)
-    socket.on('self_message', async (data) => {
+    socket.on('self_message', async (data, callback) => {
         try {
             const { content, messageType, emotionData, imageUrl } = data;
             const senderData = connectedUsers.get(socket.id);
 
-            if (!senderData) return;
+            if (!senderData) {
+                if (callback) callback({ error: 'User not found' });
+                return;
+            }
 
             // Save message to database
             const message = new Message({
@@ -396,9 +418,13 @@ io.on('connection', (socket) => {
 
             // Send back to sender
             socket.emit('new_message', message);
+            
+            // Acknowledge success
+            if (callback) callback({ success: true });
         } catch (error) {
             console.error('Error in self_message:', error);
             socket.emit('message_error', { error: 'Failed to send message' });
+            if (callback) callback({ error: 'Failed to send message' });
         }
     });
 

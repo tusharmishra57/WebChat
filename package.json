@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A real-time chat application with emotion detection and mood filters",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "start-demo": "node server-demo.js",

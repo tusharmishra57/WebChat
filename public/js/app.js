@@ -28,6 +28,26 @@ class ChatApp {
         }, 1000);
     }
 
+    updateConnectionStatus(status) {
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionText = document.getElementById('connection-text');
+        
+        if (!connectionStatus || !connectionText) return;
+        
+        connectionStatus.className = `connection-status ${status}`;
+        
+        switch (status) {
+            case 'connected':
+                connectionText.textContent = 'Connected';
+                break;
+            case 'disconnected':
+                connectionText.textContent = 'Disconnected';
+                break;
+            default:
+                connectionText.textContent = 'Connecting...';
+        }
+    }
+
     checkAuthStatus() {
         const token = localStorage.getItem('chatapp_token');
         const userData = localStorage.getItem('chatapp_user');
@@ -48,10 +68,21 @@ class ChatApp {
     }
 
     initializeSocket() {
-        this.socket = io();
+        this.socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true,
+            timeout: 20000,
+            forceNew: true,
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5,
+            maxReconnectionAttempts: 5
+        });
         
         this.socket.on('connect', () => {
-            console.log('Connected to server');
+            console.log('✅ Connected to server');
+            this.updateConnectionStatus('connected');
             if (this.currentUser) {
                 this.socket.emit('user_join', {
                     userId: this.currentUser.id,
@@ -60,8 +91,27 @@ class ChatApp {
             }
         });
 
-        this.socket.on('disconnect', () => {
-            console.log('Disconnected from server');
+        this.socket.on('disconnect', (reason) => {
+            console.log('❌ Disconnected from server:', reason);
+            this.updateConnectionStatus('disconnected');
+            this.showToast('Connection lost. Reconnecting...', 'error');
+        });
+
+        this.socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            this.updateConnectionStatus('disconnected');
+            this.showToast('Connection failed. Please refresh the page.', 'error');
+        });
+
+        this.socket.on('reconnect', (attemptNumber) => {
+            console.log('✅ Reconnected to server after', attemptNumber, 'attempts');
+            this.updateConnectionStatus('connected');
+            this.showToast('Reconnected successfully!', 'success');
+        });
+
+        this.socket.on('reconnect_error', (error) => {
+            console.error('❌ Reconnection failed:', error);
+            this.updateConnectionStatus('disconnected');
         });
 
         this.socket.on('user_online', (userData) => {
@@ -403,22 +453,41 @@ class ChatApp {
 
         if (!content) return;
 
+        // Check socket connection
+        if (!this.socket || !this.socket.connected) {
+            this.showToast('Not connected to server. Please refresh the page.', 'error');
+            return;
+        }
+
         const messageData = {
             content,
             messageType: 'text'
         };
 
-        if (this.currentChatUser.id === this.currentUser.id) {
-            // Self message
-            this.socket.emit('self_message', messageData);
-        } else {
-            // Private message
-            messageData.receiverId = this.currentChatUser.id;
-            this.socket.emit('private_message', messageData);
-        }
+        try {
+            if (this.currentChatUser.id === this.currentUser.id) {
+                // Self message
+                this.socket.emit('self_message', messageData, (response) => {
+                    if (response && response.error) {
+                        this.showToast('Failed to send message: ' + response.error, 'error');
+                    }
+                });
+            } else {
+                // Private message
+                messageData.receiverId = this.currentChatUser.id;
+                this.socket.emit('private_message', messageData, (response) => {
+                    if (response && response.error) {
+                        this.showToast('Failed to send message: ' + response.error, 'error');
+                    }
+                });
+            }
 
-        input.value = '';
-        this.stopTyping();
+            input.value = '';
+            this.stopTyping();
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.showToast('Failed to send message. Please try again.', 'error');
+        }
     }
 
     handleNewMessage(message) {

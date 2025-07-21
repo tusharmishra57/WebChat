@@ -170,6 +170,12 @@ class ChatController {
     sendEmotionMessage() {
         if (!this.currentEmotion || !window.chatApp) return;
 
+        // Check socket connection
+        if (!window.chatApp.socket || !window.chatApp.socket.connected) {
+            showToast('Not connected to server. Please refresh the page.', 'error');
+            return;
+        }
+
         const messageData = {
             content: `Feeling ${this.currentEmotion.emotion}`,
             messageType: 'emotion',
@@ -178,15 +184,26 @@ class ChatController {
 
         if (window.chatApp.currentChatUser.id === window.chatApp.currentUser.id) {
             // Self message
-            window.chatApp.socket.emit('self_message', messageData);
+            window.chatApp.socket.emit('self_message', messageData, (response) => {
+                if (response && response.error) {
+                    showToast('Failed to send emotion: ' + response.error, 'error');
+                } else {
+                    showToast('Emotion sent!', 'success');
+                }
+            });
         } else {
             // Private message
             messageData.receiverId = window.chatApp.currentChatUser.id;
-            window.chatApp.socket.emit('private_message', messageData);
+            window.chatApp.socket.emit('private_message', messageData, (response) => {
+                if (response && response.error) {
+                    showToast('Failed to send emotion: ' + response.error, 'error');
+                } else {
+                    showToast('Emotion sent!', 'success');
+                }
+            });
         }
 
         this.hideEmotionModal();
-        showToast('Emotion sent!', 'success');
     }
 
     stopEmotionCamera() {
@@ -328,6 +345,12 @@ class ChatController {
     sendMoodMessage() {
         if (!this.currentMoodImage || !window.chatApp) return;
 
+        // Check socket connection
+        if (!window.chatApp.socket || !window.chatApp.socket.connected) {
+            showToast('Not connected to server. Please refresh the page.', 'error');
+            return;
+        }
+
         const messageData = {
             content: 'Shared a mood image',
             messageType: 'mood_image',
@@ -336,15 +359,26 @@ class ChatController {
 
         if (window.chatApp.currentChatUser.id === window.chatApp.currentUser.id) {
             // Self message
-            window.chatApp.socket.emit('self_message', messageData);
+            window.chatApp.socket.emit('self_message', messageData, (response) => {
+                if (response && response.error) {
+                    showToast('Failed to send mood image: ' + response.error, 'error');
+                } else {
+                    showToast('Mood image sent!', 'success');
+                }
+            });
         } else {
             // Private message
             messageData.receiverId = window.chatApp.currentChatUser.id;
-            window.chatApp.socket.emit('private_message', messageData);
+            window.chatApp.socket.emit('private_message', messageData, (response) => {
+                if (response && response.error) {
+                    showToast('Failed to send mood image: ' + response.error, 'error');
+                } else {
+                    showToast('Mood image sent!', 'success');
+                }
+            });
         }
 
         this.hideMoodModal();
-        showToast('Mood image sent!', 'success');
     }
 
     stopMoodCamera() {
