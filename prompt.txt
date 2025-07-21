@@ -1,0 +1,19 @@
+Build a website which has following features-
+
+1.A chat application where user can chat with each other.
+2. Their should be a login page and a sign up page.
+3. Their should a Home page where all the user who are online shows up.
+4. Their should also be a Talk to yourself option as well where user can talk to themselves.
+5. The website should be able to handle multiple users at the time.
+6. Their should be a Chat page as well with following features - 
+a. User can send messages to each other.
+b. Their will be an Emotion detection option where user can see their current emotion. This will happen through an API so code accordingly.
+c. Their will be a MOOD option in the Chat Page where user can capture their image and convert it into some ghibli kind of image. This will also happen through API.
+
+7. In the home page, their should be a profile page option where user can change their profile picture and name and they can logout as well.
+
+8. I will be adding the API's later.
+9. Most importantly, I want to deploy this website. Code accordingly, Tell me step wise how can I do it.
+10. The API's that I am going to use are for following functinalities - Emotion detection (camera will open and identify face then tell current emotion), MOOD filter (open camera, capture image, convert it to ghibli or some kind of filtered image)
+11. User should be able to send the detected emotion and filtered image to the freind he is talking to.
+12. I want to use this website mainly in smartphone so make it responsive accordingly.

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatApp - Connect & Express</title>
+    <link rel="stylesheet" href="/css/style-new.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Modern chat application with emotion detection and mood filters">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">ChatApp</div>
+            <div class="loading-subtitle">Connecting hearts, one message at a time</div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="auth-page hidden">
+        <div class="auth-container glass-card">
+            <div class="auth-header">
+                <div class="auth-title">
+                    <i class="fas fa-comments"></i> Welcome Back
+                </div>
+                <div class="auth-subtitle">Sign in to continue your conversations</div>
+            </div>
+            
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email</label>
+                    <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Don't have an account? <a href="#" id="show-signup" class="auth-link">Sign up here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Page -->
+    <div id="signup-page" class="auth-page hidden">
+        <div class="auth-container glass-card">
+            <div class="auth-header">
+                <div class="auth-title">
+                    <i class="fas fa-user-plus"></i> Join ChatApp
+                </div>
+                <div class="auth-subtitle">Create your account and start connecting</div>
+            </div>
+            
+            <form id="signup-form" class="auth-form">
+                <div class="form-group">
+                    <label for="signup-username" class="form-label">Username</label>
+                    <input type="text" id="signup-username" class="form-input" placeholder="Choose a username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-email" class="form-label">Email</label>
+                    <input type="email" id="signup-email" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password" class="form-label">Password</label>
+                    <input type="password" id="signup-password" class="form-input" placeholder="Create a password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Already have an account? <a href="#" id="show-login" class="auth-link">Sign in here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home Page -->
+    <div id="home-page" class="main-page hidden">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="header-title">
+                        <i class="fas fa-home"></i> Home
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="profile-btn" class="btn-icon btn-secondary">
+                        <img id="user-avatar" src="/images/default-avatar.png" alt="Profile" class="user-avatar">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="home-content">
+            <div class="welcome-section">
+                <div class="welcome-title">
+                    Hello, <span id="user-name">User</span>! 👋
+                </div>
+                <div class="welcome-subtitle">
+                    Ready to connect and express yourself?
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <div id="talk-to-self-btn" class="glass-card quick-action-card">
+                    <div class="quick-action-icon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="quick-action-title">Talk to Yourself</div>
+                    <div class="quick-action-desc">Your personal space for thoughts</div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <i class="fas fa-users section-icon"></i>
+                Online Friends
+            </div>
+            <div id="online-users" class="users-grid">
+                <!-- Online users will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Page -->
+    <div id="chat-page" class="main-page hidden">
+        <div class="chat-header">
+            <button id="back-to-home" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <img id="chat-user-avatar" src="/images/default-avatar.png" alt="User" class="chat-user-avatar">
+            <div class="chat-user-info">
+                <h3 id="chat-user-name">User</h3>
+                <div id="chat-user-status" class="chat-user-status">
+                    <div class="status-dot"></div>
+                    Online
+                </div>
+            </div>
+            <div class="chat-actions">
+                <button id="emotion-btn" class="chat-action-btn" title="Detect your current emotion">
+                    <i class="fas fa-smile"></i>
+                    <span>Emotion</span>
+                </button>
+                <button id="mood-btn" class="chat-action-btn" title="Apply mood filter to image">
+                    <i class="fas fa-camera"></i>
+                    <span>Mood</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="messages-container" class="messages-container">
+            <!-- Messages will be populated here -->
+        </div>
+
+        <div id="typing-indicator" class="typing-indicator hidden">
+            Someone is typing...
+        </div>
+
+        <div class="message-input-container">
+            <div class="message-input-wrapper">
+                <textarea id="message-input" class="message-input" placeholder="Type your message..." rows="1"></textarea>
+                <button id="send-btn" class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-user-cog"></i> Profile Settings
+                </h2>
+                <button id="close-profile-modal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="profile-section">
+                <div class="profile-picture-section">
+                    <img id="profile-picture-preview" src="/images/default-avatar.png" alt="Profile Picture" class="user-avatar" style="width: 100px; height: 100px;">
+                    <button id="change-picture-btn" class="btn btn-secondary">
+                        <i class="fas fa-camera"></i> Change Picture
+                    </button>
+                    <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                </div>
+                
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-username" class="form-label">Username</label>
+                        <input type="text" id="profile-username" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-email" class="form-label">Email</label>
+                        <input type="email" id="profile-email" class="form-input" readonly>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+                
+                <div class="profile-actions">
+                    <button id="logout-btn" class="btn btn-secondary btn-full">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emotion Detection Modal -->
+    <div id="emotion-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-smile"></i> Emotion Detection
+                </h2>
+                <button id="close-emotion-modal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="camera-container">
+                <video id="emotion-video" class="camera-video" autoplay muted playsinline></video>
+                <canvas id="emotion-canvas" class="camera-canvas"></canvas>
+            </div>
+            
+            <div class="camera-controls">
+                <button id="start-emotion-detection" class="btn btn-primary">
+                    <i class="fas fa-video"></i> Start Camera
+                </button>
+                <button id="capture-emotion" class="btn btn-secondary hidden">
+                    <i class="fas fa-camera"></i> Detect Emotion
+                </button>
+            </div>
+            
+            <div id="emotion-result" class="result-container hidden">
+                <h3>Detected Emotion:</h3>
+                <div class="emotion-display">
+                    <div id="detected-emotion" class="emotion-text"></div>
+                    <div id="emotion-confidence" class="confidence-text"></div>
+                </div>
+                <button id="send-emotion" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Emotion
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mood Filter Modal -->
+    <div id="mood-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-camera"></i> Mood Filter
+                </h2>
+                <button id="close-mood-modal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="camera-container">
+                <video id="mood-video" class="camera-video" autoplay muted playsinline></video>
+                <canvas id="mood-canvas" class="camera-canvas"></canvas>
+            </div>
+            
+            <div class="camera-controls">
+                <button id="start-mood-camera" class="btn btn-primary">
+                    <i class="fas fa-video"></i> Start Camera
+                </button>
+                <button id="capture-mood-image" class="btn btn-secondary hidden">
+                    <i class="fas fa-camera"></i> Capture & Filter
+                </button>
+            </div>
+            
+            <div id="mood-result" class="result-container hidden">
+                <h3>Filtered Image:</h3>
+                <img id="filtered-image" class="filtered-image" alt="Filtered Image">
+                <button id="send-mood-image" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/camera.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/chat.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
