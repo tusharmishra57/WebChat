@@ -68,22 +68,32 @@ class ChatApp {
     }
 
     initializeSocket() {
+        // Prevent multiple socket connections
+        if (this.socket) {
+            this.socket.disconnect();
+            this.socket = null;
+        }
+
         this.socket = io({
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             upgrade: true,
-            rememberUpgrade: true,
-            timeout: 20000,
-            forceNew: true,
+            rememberUpgrade: false,
+            timeout: 30000,
+            forceNew: false,
             reconnection: true,
-            reconnectionDelay: 1000,
+            reconnectionDelay: 2000,
+            reconnectionDelayMax: 10000,
             reconnectionAttempts: 5,
-            maxReconnectionAttempts: 5
+            randomizationFactor: 0.5
         });
         
         this.socket.on('connect', () => {
             console.log('✅ Connected to server');
+            console.log('Socket ID:', this.socket.id);
+            console.log('Transport:', this.socket.io.engine.transport.name);
             this.updateConnectionStatus('connected');
             if (this.currentUser) {
+                console.log('Emitting user_join for:', this.currentUser.username);
                 this.socket.emit('user_join', {
                     userId: this.currentUser.id,
                     username: this.currentUser.username
@@ -93,8 +103,13 @@ class ChatApp {
 
         this.socket.on('disconnect', (reason) => {
             console.log('❌ Disconnected from server:', reason);
+            console.log('Disconnect reason details:', reason);
             this.updateConnectionStatus('disconnected');
-            this.showToast('Connection lost. Reconnecting...', 'error');
+            
+            // Only show toast for unexpected disconnections
+            if (reason !== 'io client disconnect') {
+                this.showToast('Connection lost. Reconnecting...', 'error');
+            }
         });
 
         this.socket.on('connect_error', (error) => {
@@ -127,19 +142,23 @@ class ChatApp {
         });
 
         this.socket.on('new_message', (message) => {
+            console.log('📨 Received new message:', message);
             this.handleNewMessage(message);
         });
 
         this.socket.on('message_sent', (message) => {
+            console.log('✅ Message sent confirmation:', message);
             this.handleMessageSent(message);
         });
 
         this.socket.on('user_typing', (data) => {
+            console.log('⌨️ User typing:', data);
             this.handleUserTyping(data);
         });
 
         this.socket.on('message_error', (error) => {
-            showToast('Failed to send message', 'error');
+            console.error('❌ Message error:', error);
+            this.showToast('Failed to send message: ' + (error.error || 'Unknown error'), 'error');
         });
     }
 
@@ -356,6 +375,11 @@ class ChatApp {
 
     async loadChatMessages(receiverId) {
         try {
+            if (!receiverId || receiverId === 'undefined') {
+                console.error('Invalid receiverId:', receiverId);
+                return;
+            }
+
             const token = localStorage.getItem('chatapp_token');
             const response = await fetch(`/api/messages/${receiverId}`, {
                 headers: {
@@ -366,6 +390,10 @@ class ChatApp {
             if (response.ok) {
                 const messages = await response.json();
                 this.displayMessages(messages);
+            } else {
+                console.error('Failed to load chat messages:', response.status, response.statusText);
+                const errorData = await response.text();
+                console.error('Error details:', errorData);
             }
         } catch (error) {
             console.error('Error loading messages:', error);
@@ -384,6 +412,10 @@ class ChatApp {
             if (response.ok) {
                 const messages = await response.json();
                 this.displayMessages(messages);
+            } else {
+                console.error('Failed to load self messages:', response.status, response.statusText);
+                const errorData = await response.text();
+                console.error('Error details:', errorData);
             }
         } catch (error) {
             console.error('Error loading self messages:', error);

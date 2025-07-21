@@ -19,9 +19,11 @@ const io = socketIo(server, {
         credentials: true
     },
     allowEIO3: true,
-    transports: ['websocket', 'polling'],
-    pingTimeout: 60000,
-    pingInterval: 25000
+    transports: ['polling', 'websocket'],
+    pingTimeout: 30000,
+    pingInterval: 10000,
+    upgradeTimeout: 30000,
+    maxHttpBufferSize: 1e6
 });
 
 // Middleware
@@ -272,10 +274,32 @@ app.post('/api/profile/picture', authenticateToken, upload.single('profilePictur
     }
 });
 
-// Get messages
+// Get self messages (Talk to yourself) - MUST be before the parameterized route
+app.get('/api/messages/self', authenticateToken, async (req, res) => {
+    try {
+        const messages = await Message.find({
+            sender: req.user.userId,
+            receiver: req.user.userId
+        }).populate('sender', 'username profilePicture')
+          .sort({ timestamp: 1 });
+
+        res.json(messages);
+    } catch (error) {
+        console.error('Error in /api/messages/self:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// Get messages with specific user
 app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
     try {
         const { receiverId } = req.params;
+        
+        // Validate receiverId
+        if (!receiverId || receiverId === 'undefined') {
+            return res.status(400).json({ message: 'Invalid receiver ID' });
+        }
+
         const messages = await Message.find({
             $or: [
                 { sender: req.user.userId, receiver: receiverId },
@@ -287,21 +311,7 @@ app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
 
         res.json(messages);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-});
-
-// Get self messages (Talk to yourself)
-app.get('/api/messages/self', authenticateToken, async (req, res) => {
-    try {
-        const messages = await Message.find({
-            sender: req.user.userId,
-            receiver: req.user.userId
-        }).populate('sender', 'username profilePicture')
-          .sort({ timestamp: 1 });
-
-        res.json(messages);
-    } catch (error) {
+        console.error('Error in /api/messages/:receiverId:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
@@ -323,11 +333,22 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 const connectedUsers = new Map();
 
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('✅ User connected:', socket.id);
+    console.log('Transport:', socket.conn.transport.name);
 
     // User joins
     socket.on('user_join', async (userData) => {
         try {
+            console.log(`👤 User joining: ${userData.username} (${userData.userId})`);
+            
+            // Remove any existing connections for this user
+            for (const [socketId, user] of connectedUsers.entries()) {
+                if (user.userId === userData.userId && socketId !== socket.id) {
+                    console.log(`🔄 Removing old connection for user ${userData.username}`);
+                    connectedUsers.delete(socketId);
+                }
+            }
+            
             connectedUsers.set(socket.id, userData);
             
             // Update user online status
@@ -340,8 +361,10 @@ io.on('connection', (socket) => {
             const onlineUsers = await User.find({ isOnline: true })
                 .select('username profilePicture lastSeen');
             socket.emit('online_users', onlineUsers);
+            
+            console.log(`✅ User ${userData.username} joined successfully. Online users: ${connectedUsers.size}`);
         } catch (error) {
-            console.error('Error in user_join:', error);
+            console.error('❌ Error in user_join:', error);
         }
     });
 
@@ -448,10 +471,13 @@ io.on('connection', (socket) => {
     });
 
     // Handle disconnect
-    socket.on('disconnect', async () => {
+    socket.on('disconnect', async (reason) => {
         try {
+            console.log(`❌ User disconnected: ${socket.id}, reason: ${reason}`);
             const userData = connectedUsers.get(socket.id);
             if (userData) {
+                console.log(`👋 User ${userData.username} disconnected`);
+                
                 // Update user offline status
                 await User.findByIdAndUpdate(userData.userId, { 
                     isOnline: false, 
@@ -462,11 +488,21 @@ io.on('connection', (socket) => {
                 socket.broadcast.emit('user_offline', userData);
                 
                 connectedUsers.delete(socket.id);
+                console.log(`📊 Remaining online users: ${connectedUsers.size}`);
             }
         } catch (error) {
-            console.error('Error in disconnect:', error);
+            console.error('❌ Error in disconnect:', error);
         }
-        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Debug endpoint
+app.get('/api/debug/status', (req, res) => {
+    res.json({
+        status: 'Server running',
+        connectedUsers: connectedUsers.size,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
