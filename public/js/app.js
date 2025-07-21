@@ -68,32 +68,37 @@ class ChatApp {
     }
 
     initializeSocket() {
-        // Prevent multiple socket connections
+        // Clean up existing socket
         if (this.socket) {
+            this.socket.removeAllListeners();
             this.socket.disconnect();
             this.socket = null;
         }
 
+        console.log('🔌 Initializing Socket.IO connection...');
+        
         this.socket = io({
             transports: ['polling', 'websocket'],
             upgrade: true,
             rememberUpgrade: false,
-            timeout: 30000,
-            forceNew: false,
+            timeout: 20000,
+            forceNew: true,
             reconnection: true,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 10000,
-            reconnectionAttempts: 5,
-            randomizationFactor: 0.5
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 10,
+            randomizationFactor: 0.3
         });
         
+        // Connection established
         this.socket.on('connect', () => {
-            console.log('✅ Connected to server');
-            console.log('Socket ID:', this.socket.id);
-            console.log('Transport:', this.socket.io.engine.transport.name);
+            console.log('✅ Socket connected:', this.socket.id);
+            console.log('🚀 Transport:', this.socket.io.engine.transport.name);
             this.updateConnectionStatus('connected');
+            
+            // Auto-join if user is logged in
             if (this.currentUser) {
-                console.log('Emitting user_join for:', this.currentUser.username);
+                console.log('👤 Auto-joining user:', this.currentUser.username);
                 this.socket.emit('user_join', {
                     userId: this.currentUser.id,
                     username: this.currentUser.username
@@ -141,24 +146,39 @@ class ChatApp {
             this.updateOnlineUsers(users);
         });
 
-        this.socket.on('new_message', (message) => {
-            console.log('📨 Received new message:', message);
-            this.handleNewMessage(message);
+        // Join success/error
+        this.socket.on('join_success', (data) => {
+            console.log('✅ Successfully joined chat:', data);
+            this.showToast('Connected to chat!', 'success');
         });
 
+        this.socket.on('join_error', (error) => {
+            console.error('❌ Join error:', error);
+            this.showToast('Failed to join chat: ' + error.error, 'error');
+        });
+
+        // Message received from another user
+        this.socket.on('message_received', (message) => {
+            console.log('📨 Message received:', message);
+            this.handleIncomingMessage(message);
+        });
+
+        // Message sent confirmation
         this.socket.on('message_sent', (message) => {
-            console.log('✅ Message sent confirmation:', message);
+            console.log('✅ Message sent:', message);
             this.handleMessageSent(message);
         });
 
+        // Message error
+        this.socket.on('message_error', (error) => {
+            console.error('❌ Message error:', error);
+            this.showToast('Message failed: ' + error.error, 'error');
+        });
+
+        // Typing indicators
         this.socket.on('user_typing', (data) => {
             console.log('⌨️ User typing:', data);
             this.handleUserTyping(data);
-        });
-
-        this.socket.on('message_error', (error) => {
-            console.error('❌ Message error:', error);
-            this.showToast('Failed to send message: ' + (error.error || 'Unknown error'), 'error');
         });
     }
 
@@ -497,54 +517,82 @@ class ChatApp {
         };
 
         try {
-            if (this.currentChatUser.id === this.currentUser.id) {
-                // Self message
-                this.socket.emit('self_message', messageData, (response) => {
-                    if (response && response.error) {
-                        this.showToast('Failed to send message: ' + response.error, 'error');
-                    }
-                });
-            } else {
-                // Private message
-                messageData.receiverId = this.currentChatUser.id;
-                this.socket.emit('private_message', messageData, (response) => {
-                    if (response && response.error) {
-                        this.showToast('Failed to send message: ' + response.error, 'error');
-                    }
-                });
-            }
+            // Add receiver ID to message data
+            messageData.receiverId = this.currentChatUser.id;
+            
+            console.log('📤 Sending message:', messageData);
+            
+            // Use unified message handler
+            this.socket.emit('send_message', messageData, (response) => {
+                if (response && !response.success) {
+                    console.error('❌ Message send failed:', response.error);
+                    this.showToast('Failed to send: ' + response.error, 'error');
+                } else {
+                    console.log('✅ Message sent successfully:', response);
+                }
+            });
 
+            // Clear input and stop typing
             input.value = '';
             this.stopTyping();
+            
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('❌ Send message error:', error);
             this.showToast('Failed to send message. Please try again.', 'error');
         }
     }
 
-    handleNewMessage(message) {
-        // Only add message if it's for the current chat
+    // Handle incoming messages from other users
+    handleIncomingMessage(message) {
+        console.log('📥 Processing incoming message:', message);
+        
         if (this.currentChatUser) {
-            const isRelevantMessage = 
-                (message.sender._id === this.currentChatUser.id && message.receiver._id === this.currentUser.id) ||
-                (message.sender._id === this.currentUser.id && message.receiver._id === this.currentChatUser.id) ||
-                (message.sender._id === this.currentUser.id && message.receiver._id === this.currentUser.id);
-
-            if (isRelevantMessage) {
+            const senderId = message.sender._id || message.sender;
+            
+            // Show message if it's from the current chat user
+            if (senderId === this.currentChatUser.id) {
                 this.addMessageToChat(message);
                 this.scrollToBottom();
+                this.playNotificationSound();
             }
         }
+        
+        // Show toast notification
+        const senderName = message.sender.username || 'Someone';
+        this.showToast(`New message from ${senderName}`, 'info');
+    }
 
-        // Show notification if not in chat or different chat
-        if (!this.currentChatUser || message.sender._id !== this.currentChatUser.id) {
-            showToast(`New message from ${message.sender.username}`, 'info');
+    // Handle sent message confirmation
+    handleMessageSent(message) {
+        console.log('📤 Processing sent message confirmation:', message);
+        
+        // Always display sent messages in current chat
+        if (this.currentChatUser) {
+            this.addMessageToChat(message);
+            this.scrollToBottom();
         }
     }
 
-    handleMessageSent(message) {
-        this.addMessageToChat(message);
-        this.scrollToBottom();
+    // Play notification sound
+    playNotificationSound() {
+        try {
+            // Simple beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        } catch (error) {
+            // Ignore audio errors
+        }
     }
 
     handleTyping() {

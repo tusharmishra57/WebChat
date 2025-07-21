@@ -182,26 +182,18 @@ class ChatController {
             emotionData: this.currentEmotion
         };
 
-        if (window.chatApp.currentChatUser.id === window.chatApp.currentUser.id) {
-            // Self message
-            window.chatApp.socket.emit('self_message', messageData, (response) => {
-                if (response && response.error) {
-                    showToast('Failed to send emotion: ' + response.error, 'error');
-                } else {
-                    showToast('Emotion sent!', 'success');
-                }
-            });
-        } else {
-            // Private message
-            messageData.receiverId = window.chatApp.currentChatUser.id;
-            window.chatApp.socket.emit('private_message', messageData, (response) => {
-                if (response && response.error) {
-                    showToast('Failed to send emotion: ' + response.error, 'error');
-                } else {
-                    showToast('Emotion sent!', 'success');
-                }
-            });
-        }
+        // Add receiver ID and send using unified handler
+        messageData.receiverId = window.chatApp.currentChatUser.id;
+        
+        console.log('📤 Sending emotion message:', messageData);
+        
+        window.chatApp.socket.emit('send_message', messageData, (response) => {
+            if (response && !response.success) {
+                showToast('Failed to send emotion: ' + response.error, 'error');
+            } else {
+                showToast('Emotion sent!', 'success');
+            }
+        });
 
         this.hideEmotionModal();
     }
@@ -357,26 +349,18 @@ class ChatController {
             imageUrl: this.currentMoodImage
         };
 
-        if (window.chatApp.currentChatUser.id === window.chatApp.currentUser.id) {
-            // Self message
-            window.chatApp.socket.emit('self_message', messageData, (response) => {
-                if (response && response.error) {
-                    showToast('Failed to send mood image: ' + response.error, 'error');
-                } else {
-                    showToast('Mood image sent!', 'success');
-                }
-            });
-        } else {
-            // Private message
-            messageData.receiverId = window.chatApp.currentChatUser.id;
-            window.chatApp.socket.emit('private_message', messageData, (response) => {
-                if (response && response.error) {
-                    showToast('Failed to send mood image: ' + response.error, 'error');
-                } else {
-                    showToast('Mood image sent!', 'success');
-                }
-            });
-        }
+        // Add receiver ID and send using unified handler
+        messageData.receiverId = window.chatApp.currentChatUser.id;
+        
+        console.log('📤 Sending mood message:', messageData);
+        
+        window.chatApp.socket.emit('send_message', messageData, (response) => {
+            if (response && !response.success) {
+                showToast('Failed to send mood image: ' + response.error, 'error');
+            } else {
+                showToast('Mood image sent!', 'success');
+            }
+        });
 
         this.hideMoodModal();
     }
