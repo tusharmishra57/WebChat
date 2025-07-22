@@ -26,7 +26,7 @@ class ChatController {
             this.sendEmotionMessage();
         });
 
-        // Mood filter
+        // Artistic filter
         document.getElementById('mood-btn')?.addEventListener('click', () => {
             this.showMoodModal();
         });
@@ -253,7 +253,7 @@ class ChatController {
             document.getElementById('start-mood-camera')?.classList.add('hidden');
             document.getElementById('capture-mood-image')?.classList.remove('hidden');
             
-            showToast('Camera started! Smile for your mood filter!', 'info');
+            showToast('Camera started! Smile for your artistic filter!', 'info');
         } catch (error) {
             console.error('Error accessing camera:', error);
             showToast('Unable to access camera. Please check permissions.', 'error');
@@ -274,65 +274,150 @@ class ChatController {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
         
-        // Convert to blob
+        // Convert to blob and send to cartoon API
         canvas.toBlob(async (blob) => {
             try {
-                // For now, simulate mood filter
-                // In production, you would send this to your mood filter API
-                const filteredImageUrl = await this.simulateMoodFilter(blob);
+                // Show loading state
+                this.showProcessingState();
+                showToast('🎨 Applying cartoon effect...', 'info');
                 
-                this.displayMoodResult(filteredImageUrl);
+                // Apply cartoon filter using Oyyi API
+                const filteredImageUrl = await this.applyCartoonFilter(blob);
+                
+                this.displayCartoonResult(filteredImageUrl);
+                showToast('✅ Cartoon effect applied!', 'success');
             } catch (error) {
-                console.error('Error applying mood filter:', error);
-                showToast('Failed to apply mood filter. Please try again.', 'error');
+                console.error('Error applying cartoon filter:', error);
+                showToast('❌ Failed to apply cartoon effect. Please try again.', 'error');
+                this.hideProcessingState();
             }
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.9);
     }
 
-    async simulateMoodFilter(imageBlob) {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // For demo purposes, we'll apply a simple CSS filter effect
-        // In production, this would be replaced with actual API call
-        const canvas = document.getElementById('mood-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Apply a simple filter effect (sepia + contrast)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Apply sepia filter
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+    // 🎨 CARTOON FILTER INTEGRATION
+    async applyCartoonFilter(imageBlob) {
+        try {
+            console.log('🎨 Applying cartoon filter...');
+            showToast('🎨 Processing cartoon effect...', 'info');
+
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'cartoon-image.jpg');
+
+            const response = await fetch('/api/mood-filter', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('chatapp_token')}`
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('🎨 Cartoon Filter API response:', result);
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || `API Error: ${response.status}`);
+            }
+
+            if (result.filteredImage) {
+                console.log('✅ Cartoon effect applied successfully');
+                showToast(`✅ ${result.message}`, 'success');
+                return result.filteredImage;
+            } else {
+                throw new Error('No filtered image received from Cartoon API');
+            }
+
+        } catch (error) {
+            console.error('❌ Cartoon filter error:', error);
             
-            data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
-            data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
-            data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+            // Fallback to original image with notification
+            showToast(`⚠️ Cartoon effect failed: ${error.message}`, 'warning');
+            return this.fallbackFilter(imageBlob);
         }
+    }
+
+    // 🎨 FALLBACK FILTER (if Cartoon API fails)
+    async fallbackFilter(imageBlob) {
+        const canvas = document.getElementById('mood-canvas');
         
-        ctx.putImageData(imageData, 0, 0);
-        
-        // Convert to data URL
+        // Return original image as fallback
         return canvas.toDataURL('image/jpeg', 0.8);
     }
 
-    displayMoodResult(imageUrl) {
-        const filteredImage = document.getElementById('filtered-image');
+    // 🔄 PROCESSING STATE MANAGEMENT
+    showProcessingState() {
+        const resultContainer = document.getElementById('mood-result');
+        const captureButton = document.getElementById('capture-mood-image');
+        
+        if (resultContainer) {
+            resultContainer.innerHTML = `
+                <div class="mood-processing">
+                    <i class="fas fa-magic fa-spin"></i>
+                    <p>Converting to Artistic Style...</p>
+                    <small>This may take a few seconds</small>
+                </div>
+            `;
+            resultContainer.classList.remove('hidden');
+        }
+        
+        if (captureButton) {
+            captureButton.disabled = true;
+            captureButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+    }
+
+    hideProcessingState() {
+        const captureButton = document.getElementById('capture-mood-image');
+        
+        if (captureButton) {
+            captureButton.disabled = false;
+            captureButton.innerHTML = '<i class="fas fa-magic"></i> Capture & Apply Cartoon';
+        }
+    }
+
+    displayCartoonResult(imageUrl) {
         const resultContainer = document.getElementById('mood-result');
         
-        if (filteredImage) filteredImage.src = imageUrl;
-        if (resultContainer) resultContainer.classList.remove('hidden');
+        if (resultContainer) {
+            resultContainer.innerHTML = `
+                <h3>🎨 Cartoon Result:</h3>
+                <img id="filtered-image" src="${imageUrl}" alt="Cartoon Filtered Image" class="filtered-image">
+                <div class="result-actions">
+                    <button id="send-mood-image" class="btn btn-success">
+                        <i class="fas fa-paper-plane"></i> Send Cartoon
+                    </button>
+                    <button id="retake-mood-image" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            `;
+            resultContainer.classList.remove('hidden');
+        }
         
-        // Hide capture button
+        // Hide capture button, reset it
+        this.hideProcessingState();
         document.getElementById('capture-mood-image')?.classList.add('hidden');
         
         // Store image data for sending
         this.currentMoodImage = imageUrl;
         
-        showToast('Mood filter applied!', 'success');
+        // Add event listeners
+        document.getElementById('send-mood-image')?.addEventListener('click', () => {
+            this.sendMoodMessage();
+        });
+        
+        document.getElementById('retake-mood-image')?.addEventListener('click', () => {
+            this.resetMoodCapture();
+        });
+    }
+
+    resetMoodCapture() {
+        const resultContainer = document.getElementById('mood-result');
+        const captureButton = document.getElementById('capture-mood-image');
+        
+        if (resultContainer) resultContainer.classList.add('hidden');
+        if (captureButton) captureButton.classList.remove('hidden');
+        
+        this.currentMoodImage = null;
     }
 
     sendMoodMessage() {

@@ -163,9 +163,9 @@
                     <i class="fas fa-smile"></i>
                     <span>Emotion</span>
                 </button>
-                <button id="mood-btn" class="chat-action-btn" title="Apply mood filter to image">
-                    <i class="fas fa-camera"></i>
-                    <span>Mood</span>
+                <button id="mood-btn" class="chat-action-btn" title="Apply Cartoon Filter">
+                    <i class="fas fa-magic"></i>
+                    <span>Cartoon</span>
                 </button>
             </div>
         </div>
@@ -319,12 +319,12 @@
         </div>
     </div>
 
-    <!-- Mood Filter Modal -->
+    <!-- Cartoon Filter Modal -->
     <div id="mood-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title">
-                    <i class="fas fa-camera"></i> Mood Filter
+                    <i class="fas fa-magic"></i> Cartoon Filter
                 </h2>
                 <button id="close-mood-modal" class="close-btn">
                     <i class="fas fa-times"></i>
@@ -341,7 +341,7 @@
                     <i class="fas fa-video"></i> Start Camera
                 </button>
                 <button id="capture-mood-image" class="btn btn-secondary hidden">
-                    <i class="fas fa-camera"></i> Capture & Filter
+                    <i class="fas fa-magic"></i> Capture & Apply Cartoon
                 </button>
             </div>
             
@@ -360,6 +360,7 @@
 
     <!-- Scripts -->
     <script src="/socket.io/socket.io.js"></script>
+    <!-- Cartoon Filter System - Oyyi API processing -->
     <script src="/js/utils.js"></script>
     <script src="/js/camera.js"></script>
     <script src="/js/auth.js"></script>

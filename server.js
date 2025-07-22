@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -338,6 +339,159 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
+});
+
+// 🎨 CARTOON FILTER API ENDPOINT - Using Oyyi Cartoon Effect API
+app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
+    console.log('🎨 Cartoon Filter API called - Using Oyyi API');
+    
+    try {
+        if (!req.file) {
+            console.log('❌ No file uploaded');
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No image file provided' 
+            });
+        }
+
+        console.log('📸 Image details:', {
+            size: req.file.size + ' bytes',
+            type: req.file.mimetype,
+            filename: req.file.filename
+        });
+
+        console.log('🎨 Applying cartoon effect using Oyyi API...');
+        
+        const fs = require('fs');
+        const path = require('path');
+        const FormData = require('form-data');
+        
+        // Create output filename
+        const outputFilename = `cartoon_${Date.now()}.jpg`;
+        const outputPath = path.join(__dirname, 'public', 'uploads', outputFilename);
+        
+        // Ensure uploads directory exists
+        const uploadsDir = path.join(__dirname, 'public', 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        console.log('🎨 Cartoon effect parameters:');
+        console.log('   • Edge Size: 2 (medium edge thickness)');
+        console.log('   • Number of Colors: 6 (simplified color palette)');
+        console.log('   • Style: Classic cartoon effect');
+        
+        // Prepare form data for Oyyi API
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(req.file.path));
+        formData.append('edge_size', '2');  // Medium edge thickness for clear cartoon lines
+        formData.append('num_colors', '6');  // Fewer colors for more cartoon-like appearance
+        
+        // Call Oyyi Cartoon API
+        const response = await axios.post('https://oyyi.xyz/api/image/cartoon', formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'Accept': 'application/json'
+            },
+            responseType: 'arraybuffer',  // Important: get binary data
+            timeout: 30000  // 30 second timeout
+        });
+        
+        if (response.status !== 200) {
+            throw new Error(`Oyyi API returned status ${response.status}`);
+        }
+        
+        // Save the cartoon result
+        fs.writeFileSync(outputPath, response.data);
+        
+        // Clean up uploaded file
+        try {
+            fs.unlinkSync(req.file.path);
+        } catch (cleanupError) {
+            console.warn('⚠️ Could not clean up uploaded file:', cleanupError.message);
+        }
+
+        console.log('✅ Cartoon effect applied successfully!');
+
+        res.json({
+            success: true,
+            message: 'Cartoon effect applied successfully!',
+            filteredImage: `/uploads/${outputFilename}`,
+            appliedEffects: {
+                style: 'Cartoon',
+                edgeSize: '2 (medium)',
+                numColors: '6 (simplified palette)',
+                effect: 'Classic cartoon style with clear edges and simplified colors'
+            },
+            provider: 'Oyyi Cartoon API (Free)'
+        });
+
+    } catch (error) {
+        console.error('❌ Cartoon filter error:', {
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // Clean up uploaded file on error
+        try {
+            if (req.file && req.file.path) {
+                fs.unlinkSync(req.file.path);
+            }
+        } catch (cleanupError) {
+            console.warn('⚠️ Could not clean up uploaded file after error:', cleanupError.message);
+        }
+        
+        // Handle specific API errors
+        let errorMessage = 'Cartoon processing error: ' + error.message;
+        if (error.response) {
+            if (error.response.status === 400) {
+                errorMessage = 'Invalid image format or parameters';
+            } else if (error.response.status === 413) {
+                errorMessage = 'Image file too large (max 10MB)';
+            } else if (error.response.status === 500) {
+                errorMessage = 'Oyyi API server error - please try again';
+            }
+        } else if (error.code === 'ECONNABORTED') {
+            errorMessage = 'Request timeout - please try with a smaller image';
+        } else if (error.code === 'ENOTFOUND') {
+            errorMessage = 'Cannot connect to Oyyi API - please check internet connection';
+        }
+        
+        return res.status(500).json({ 
+            success: false, 
+            message: errorMessage,
+            error: error.message
+        });
+    }
+});
+
+// 🧪 TEST CARTOON FILTER API ENDPOINT
+app.get('/api/test-mood-filter', async (req, res) => {
+    console.log('🧪 Testing Cartoon Filter API configuration...');
+    
+    res.json({
+        success: true,
+        message: 'Cartoon Filter API is ready - completely FREE!',
+        config: {
+            provider: 'Oyyi Cartoon API',
+            endpoint: 'https://oyyi.xyz/api/image/cartoon',
+            cost: 'FREE',
+            features: [
+                'Classic cartoon effect',
+                'Adjustable edge thickness (1-5)',
+                'Customizable color count (2-16)',
+                'Professional cartoon transformation',
+                'Supports JPEG, PNG, WebP, BMP, TIFF'
+            ],
+            parameters: {
+                edgeSize: '2 (medium edge thickness)',
+                numColors: '6 (simplified color palette)',
+                maxFileSize: '10MB',
+                timeout: '30 seconds'
+            },
+            note: 'Ready to transform photos into cartoon-style images!'
+        }
+    });
 });
 
 // Enhanced Socket.IO connection handling

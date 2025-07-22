@@ -754,9 +754,83 @@ body::before {
 }
 
 .mood-image {
-    max-width: 200px;
-    border-radius: var(--border-radius-small);
+    max-width: 250px;
+    width: 100%;
+    border-radius: 16px;
     margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mood-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Loading state for mood images */
+.mood-processing {
+    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    background-size: 400% 400%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 16px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-weight: 500;
+}
+
+@keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* 🎨 MOOD RESULT STYLES */
+.filtered-image {
+    max-width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    margin: 16px 0;
+}
+
+.result-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.result-actions .btn {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+    padding: 12px 20px;
+    font-weight: 500;
+}
+
+.result-actions .btn-success {
+    background: linear-gradient(135deg, #51cf66, #37b24d);
+    border: none;
+    color: white;
+}
+
+.result-actions .btn-success:hover {
+    background: linear-gradient(135deg, #37b24d, #2f9e44);
+    transform: translateY(-1px);
+}
+
+.result-actions .btn-secondary {
+    background: linear-gradient(135deg, #868e96, #495057);
+    border: none;
+    color: white;
+}
+
+.result-actions .btn-secondary:hover {
+    background: linear-gradient(135deg, #495057, #343a40);
+    transform: translateY(-1px);
 }
 
 /* Typing Indicator */
