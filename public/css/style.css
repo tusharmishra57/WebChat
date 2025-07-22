@@ -567,10 +567,25 @@ body::before {
     opacity: 0.9;
 }
 
-.mood-image {
-    max-width: 200px;
+.mood-image, .filtered-image {
+    max-width: 300px;  /* Increased size for better visibility */
     border-radius: var(--border-radius-small);
     margin-bottom: 10px;
+    /* Enhanced image quality settings */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    /* Smooth scaling */
+    object-fit: contain;
+    /* Better display quality */
+    filter: contrast(1.1) saturate(1.1);
+    /* Smooth transitions */
+    transition: var(--transition);
+}
+
+.mood-image:hover, .filtered-image:hover {
+    transform: scale(1.02);
+    filter: contrast(1.15) saturate(1.15);
 }
 
 /* Message Input */

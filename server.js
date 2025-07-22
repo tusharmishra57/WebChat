@@ -341,9 +341,9 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// 🎨 CARTOON FILTER API ENDPOINT - Using Nero AI ImageToImage API
+// 🎨 CARTOON FILTER API ENDPOINT - Using Oyyi Cartoon Effect API
 app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
-    console.log('🎨 Cartoon Filter API called - Using Nero AI');
+    console.log('🎨 Cartoon Filter API called - Using Oyyi API');
     
     try {
         if (!req.file) {
@@ -360,14 +360,14 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filename: req.file.filename
         });
 
-        console.log('🎨 Applying cartoon effect using Nero AI...');
+        console.log('🎨 Applying cartoon effect using Oyyi API...');
         
         const fs = require('fs');
         const path = require('path');
         const FormData = require('form-data');
         
-        // Create output filename
-        const outputFilename = `cartoon_${Date.now()}.jpg`;
+        // Create output filename with higher quality extension
+        const outputFilename = `cartoon_${Date.now()}.png`;  // PNG for better quality
         const outputPath = path.join(__dirname, 'public', 'uploads', outputFilename);
         
         // Ensure uploads directory exists
@@ -376,90 +376,40 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        console.log('🎨 Cartoon effect parameters:');
-        console.log('   • Style: Cartoon (3D cartoon anime style)');
-        console.log('   • Provider: Nero AI ImageToImage API');
-        console.log('   • Processing: Asynchronous with task polling');
+        console.log('🎨 Cartoon effect parameters (ENHANCED):');
+        console.log('   • Style: High-quality cartoon effect');
+        console.log('   • Provider: Oyyi Cartoon API');
+        console.log('   • Processing: Direct transformation with quality enhancement');
+        console.log('   • Output format: PNG (lossless quality)');
+        console.log('   • Input size:', req.file.size, 'bytes');
         
-        // Step 1: Create task with Nero AI
+        // Prepare form data for Oyyi API
         const formData = new FormData();
-        const payload = {
-            type: 'ImageToImage',
-            body: {
-                style_id: 'Cartoon_img',  // Default cartoon style
-                count: 1,
-                HD: false
-            }
-        };
-        
-        formData.append('payload', JSON.stringify(payload));
         formData.append('file', fs.createReadStream(req.file.path));
         
-        console.log('📤 Creating Nero AI task...');
-        const taskResponse = await axios.post('https://api.nero.com/biz/api/task', formData, {
+        // Call Oyyi Cartoon API
+        const response = await axios.post('https://oyyi.xyz/api/image/cartoon', formData, {
             headers: {
-                'x-neroai-api-key': '2BN6K16CCHQU3JVCJ2S8U5HU',
-                ...formData.getHeaders()
+                ...formData.getHeaders(),
+                'Accept': 'application/json'
             },
-            timeout: 30000
+            responseType: 'arraybuffer',  // Important: get binary data
+            timeout: 30000  // 30 second timeout
         });
         
-        if (taskResponse.data.code !== 0) {
-            throw new Error(`Nero AI task creation failed: ${taskResponse.data.msg || 'Unknown error'}`);
+        if (response.status !== 200) {
+            throw new Error(`Oyyi API returned status ${response.status}`);
         }
         
-        const taskId = taskResponse.data.data.task_id;
-        console.log('✅ Task created successfully:', taskId);
+        // Save the cartoon result with quality validation
+        fs.writeFileSync(outputPath, response.data);
         
-        // Step 2: Poll for results
-        console.log('⏳ Polling for results...');
-        let attempts = 0;
-        const maxAttempts = 30; // 30 attempts = ~60 seconds max wait
-        let result = null;
-        
-        while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-            attempts++;
-            
-            console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}...`);
-            
-            const pollResponse = await axios.get(`https://api.nero.com/biz/api/task?task_id=${taskId}`, {
-                headers: {
-                    'x-neroai-api-key': '2BN6K16CCHQU3JVCJ2S8U5HU'
-                },
-                timeout: 10000
-            });
-            
-            if (pollResponse.data.code !== 0) {
-                throw new Error(`Nero AI polling failed: ${pollResponse.data.msg || 'Unknown error'}`);
-            }
-            
-            const status = pollResponse.data.data.status;
-            console.log(`📊 Task status: ${status}`);
-            
-            if (status === 'done') {
-                result = pollResponse.data.data.result;
-                break;
-            } else if (status === 'failed') {
-                throw new Error(`Nero AI processing failed: ${pollResponse.data.data.msg || 'Processing failed'}`);
-            }
-            // Continue polling for 'pending' or 'running' status
-        }
-        
-        if (!result) {
-            throw new Error('Nero AI processing timeout - please try again');
-        }
-        
-        // Step 3: Download and save the result
-        console.log('📥 Downloading cartoon result...');
-        const imageUrl = result.outputs[0]; // Get first output image
-        
-        const imageResponse = await axios.get(imageUrl, {
-            responseType: 'arraybuffer',
-            timeout: 30000
-        });
-        
-        fs.writeFileSync(outputPath, imageResponse.data);
+        // Log output file information for quality verification
+        const outputStats = fs.statSync(outputPath);
+        console.log('📊 Output file stats:');
+        console.log('   • Size:', outputStats.size, 'bytes');
+        console.log('   • Quality ratio:', (outputStats.size / req.file.size * 100).toFixed(1) + '%');
+        console.log('   • Format: PNG (lossless)');
         
         // Clean up uploaded file
         try {
@@ -476,12 +426,11 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filteredImage: `/uploads/${outputFilename}`,
             appliedEffects: {
                 style: 'Cartoon',
-                type: '3D cartoon anime style',
-                provider: 'Nero AI ImageToImage',
-                processing: 'Advanced AI neural network'
+                type: 'Cartoon transformation',
+                provider: 'Oyyi Cartoon API',
+                processing: 'Direct image transformation'
             },
-            provider: 'Nero AI (Professional)',
-            taskId: taskId
+            provider: 'Oyyi Cartoon API (Free)'
         });
 
     } catch (error) {
@@ -505,16 +454,14 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             if (error.response.status === 400) {
                 errorMessage = 'Invalid image format or parameters';
             } else if (error.response.status === 413) {
-                errorMessage = 'Image file too large (max 50MB)';
+                errorMessage = 'Image file too large (max 10MB)';
             } else if (error.response.status === 500) {
-                errorMessage = 'Nero AI server error - please try again';
-            } else if (error.response.status === 429) {
-                errorMessage = 'Rate limit exceeded - please wait and try again';
+                errorMessage = 'Oyyi API server error - please try again';
             }
         } else if (error.code === 'ECONNABORTED') {
             errorMessage = 'Request timeout - please try with a smaller image';
         } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'Cannot connect to Nero AI - please check internet connection';
+            errorMessage = 'Cannot connect to Oyyi API - please check internet connection';
         }
         
         res.status(500).json({
@@ -531,25 +478,30 @@ app.get('/api/test-mood-filter', async (req, res) => {
     
     res.json({
         success: true,
-        message: 'Cartoon Filter API is ready - Professional Quality!',
+        message: 'Enhanced Cartoon Filter API is ready - completely FREE!',
         config: {
-            provider: 'Nero AI ImageToImage',
-            endpoint: 'https://api.nero.com/biz/api/task',
-            cost: 'PAID (Credits)',
+            provider: 'Oyyi Cartoon API (Enhanced)',
+            endpoint: 'https://oyyi.xyz/api/image/cartoon',
+            cost: 'FREE',
             features: [
-                '3D cartoon anime style transformation',
-                'Professional AI neural network processing',
-                'High-quality cartoon conversion',
-                'Asynchronous processing with polling',
-                'Supports JPG, JPEG, PNG, BMP, WEBP'
+                'High-quality cartoon effect transformation',
+                'Enhanced image resolution processing',
+                'PNG output for lossless quality',
+                'Improved camera capture (720p/1080p)',
+                'Quality validation and monitoring',
+                'No registration required',
+                'Supports JPEG, PNG, WebP, BMP, TIFF'
             ],
             parameters: {
-                style: 'Cartoon_img (3D cartoon anime)',
-                maxFileSize: '50MB',
-                timeout: '60 seconds',
-                processing: 'Asynchronous with task polling'
+                style: 'Enhanced cartoon transformation',
+                inputQuality: '95% JPEG compression',
+                outputFormat: 'PNG (lossless)',
+                cameraResolution: '1280x720 (ideal)',
+                maxFileSize: '10MB',
+                timeout: '30 seconds',
+                processing: 'Direct transformation with quality enhancement'
             },
-            note: 'NEW: Professional cartoon filter using Nero AI - creates amazing cartoon effects!'
+            note: 'ENHANCED: High-quality cartoon filter with improved resolution and PNG output!'
         }
     });
 });

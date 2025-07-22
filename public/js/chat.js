@@ -266,15 +266,36 @@ class ChatController {
         
         if (!video || !canvas) return;
 
-        // Set canvas dimensions
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // Set canvas dimensions with higher resolution for better quality
+        const maxWidth = 1920;  // Higher resolution for better quality
+        const maxHeight = 1080;
         
-        // Draw video frame to canvas
+        let { videoWidth, videoHeight } = video;
+        
+        // Scale up if video is too small for better quality
+        if (videoWidth < 640) {
+            const scale = 640 / videoWidth;
+            videoWidth *= scale;
+            videoHeight *= scale;
+        }
+        
+        // Limit maximum size to prevent huge files
+        if (videoWidth > maxWidth) {
+            const scale = maxWidth / videoWidth;
+            videoWidth *= scale;
+            videoHeight *= scale;
+        }
+        
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+        
+        // Draw video frame to canvas with high quality settings
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
         
-        // Convert to blob and send to cartoon API
+        // Convert to blob with maximum quality (95% instead of 90%)
         canvas.toBlob(async (blob) => {
             try {
                 // Show loading state
@@ -291,17 +312,17 @@ class ChatController {
                 showToast('❌ Failed to apply cartoon effect. Please try again.', 'error');
                 this.hideProcessingState();
             }
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.95);  // Increased quality from 90% to 95%
     }
 
-    // 🎨 CARTOON FILTER INTEGRATION - Using Nero AI
+    // 🎨 CARTOON FILTER INTEGRATION - Using Oyyi API
     async applyCartoonFilter(imageBlob) {
         try {
-            console.log('🎨 Applying cartoon filter using Nero AI...');
+            console.log('🎨 Applying cartoon filter using Oyyi API...');
             showToast('🎨 Processing cartoon effect...', 'info');
 
             const formData = new FormData();
-            formData.append('image', imageBlob, 'cartoon-image.jpg');
+            formData.append('image', imageBlob, 'cartoon-image.jpg');  // Input as JPG, output as PNG
 
             const response = await fetch('/api/mood-filter', {
                 method: 'POST',
@@ -319,7 +340,7 @@ class ChatController {
             }
 
             if (result.filteredImage) {
-                console.log('✅ Cartoon effect applied successfully using Nero AI');
+                console.log('✅ Cartoon effect applied successfully using Oyyi API');
                 showToast(`✅ ${result.message}`, 'success');
                 return result.filteredImage;
             } else {

@@ -19,8 +19,8 @@ class CameraController {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 720, min: 480 },
                     facingMode: 'user'
                 } 
             });
@@ -38,8 +38,8 @@ class CameraController {
         try {
             const constraints = {
                 video: {
-                    width: { ideal: options.width || 640 },
-                    height: { ideal: options.height || 480 },
+                    width: { ideal: options.width || 1280, min: 640 },
+                    height: { ideal: options.height || 720, min: 480 },
                     facingMode: options.facingMode || 'user'
                 }
             };
