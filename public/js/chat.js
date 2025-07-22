@@ -279,29 +279,29 @@ class ChatController {
             try {
                 // Show loading state
                 this.showProcessingState();
-                showToast('🎨 Applying cartoon effect...', 'info');
+                showToast('🎨 Applying sketch effect...', 'info');
                 
-                // Apply cartoon filter using Oyyi API
-                const filteredImageUrl = await this.applyCartoonFilter(blob);
+                // Apply sketch filter using Oyyi API
+                const filteredImageUrl = await this.applySketchFilter(blob);
                 
-                this.displayCartoonResult(filteredImageUrl);
-                showToast('✅ Cartoon effect applied!', 'success');
+                this.displaySketchResult(filteredImageUrl);
+                showToast('✅ Sketch effect applied!', 'success');
             } catch (error) {
-                console.error('Error applying cartoon filter:', error);
-                showToast('❌ Failed to apply cartoon effect. Please try again.', 'error');
+                console.error('Error applying sketch filter:', error);
+                showToast('❌ Failed to apply sketch effect. Please try again.', 'error');
                 this.hideProcessingState();
             }
         }, 'image/jpeg', 0.9);
     }
 
-    // 🎨 CARTOON FILTER INTEGRATION
-    async applyCartoonFilter(imageBlob) {
+    // 🎨 SKETCH FILTER INTEGRATION
+    async applySketchFilter(imageBlob) {
         try {
-            console.log('🎨 Applying cartoon filter...');
-            showToast('🎨 Processing cartoon effect...', 'info');
+            console.log('🎨 Applying sketch filter...');
+            showToast('🎨 Processing sketch effect...', 'info');
 
             const formData = new FormData();
-            formData.append('image', imageBlob, 'cartoon-image.jpg');
+            formData.append('image', imageBlob, 'sketch-image.jpg');
 
             const response = await fetch('/api/mood-filter', {
                 method: 'POST',
@@ -312,30 +312,30 @@ class ChatController {
             });
 
             const result = await response.json();
-            console.log('🎨 Cartoon Filter API response:', result);
+            console.log('🎨 Sketch Filter API response:', result);
 
             if (!response.ok || !result.success) {
                 throw new Error(result.message || `API Error: ${response.status}`);
             }
 
             if (result.filteredImage) {
-                console.log('✅ Cartoon effect applied successfully');
+                console.log('✅ Sketch effect applied successfully');
                 showToast(`✅ ${result.message}`, 'success');
                 return result.filteredImage;
             } else {
-                throw new Error('No filtered image received from Cartoon API');
+                throw new Error('No filtered image received from Sketch API');
             }
 
         } catch (error) {
-            console.error('❌ Cartoon filter error:', error);
+            console.error('❌ Sketch filter error:', error);
             
             // Fallback to original image with notification
-            showToast(`⚠️ Cartoon effect failed: ${error.message}`, 'warning');
+            showToast(`⚠️ Sketch effect failed: ${error.message}`, 'warning');
             return this.fallbackFilter(imageBlob);
         }
     }
 
-    // 🎨 FALLBACK FILTER (if Cartoon API fails)
+    // 🎨 FALLBACK FILTER (if Sketch API fails)
     async fallbackFilter(imageBlob) {
         const canvas = document.getElementById('mood-canvas');
         
@@ -370,20 +370,20 @@ class ChatController {
         
         if (captureButton) {
             captureButton.disabled = false;
-            captureButton.innerHTML = '<i class="fas fa-magic"></i> Capture & Apply Cartoon';
+            captureButton.innerHTML = '<i class="fas fa-magic"></i> Capture & Apply Sketch';
         }
     }
 
-    displayCartoonResult(imageUrl) {
+    displaySketchResult(imageUrl) {
         const resultContainer = document.getElementById('mood-result');
         
         if (resultContainer) {
             resultContainer.innerHTML = `
-                <h3>🎨 Cartoon Result:</h3>
-                <img id="filtered-image" src="${imageUrl}" alt="Cartoon Filtered Image" class="filtered-image">
+                <h3>🎨 Sketch Result:</h3>
+                <img id="filtered-image" src="${imageUrl}" alt="Sketch Filtered Image" class="filtered-image">
                 <div class="result-actions">
                     <button id="send-mood-image" class="btn btn-success">
-                        <i class="fas fa-paper-plane"></i> Send Cartoon
+                        <i class="fas fa-paper-plane"></i> Send Sketch
                     </button>
                     <button id="retake-mood-image" class="btn btn-secondary">
                         <i class="fas fa-redo"></i> Try Again

@@ -341,9 +341,9 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// 🎨 CARTOON FILTER API ENDPOINT - Using Oyyi Cartoon Effect API
+// 🎨 SKETCH FILTER API ENDPOINT - Using Oyyi Sketch Effect API
 app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
-    console.log('🎨 Cartoon Filter API called - Using Oyyi API');
+    console.log('🎨 Sketch Filter API called - Using Oyyi API');
     
     try {
         if (!req.file) {
@@ -360,14 +360,14 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filename: req.file.filename
         });
 
-        console.log('🎨 Applying cartoon effect using Oyyi API...');
+        console.log('🎨 Applying sketch effect using Oyyi API...');
         
         const fs = require('fs');
         const path = require('path');
         const FormData = require('form-data');
         
         // Create output filename
-        const outputFilename = `cartoon_${Date.now()}.jpg`;
+        const outputFilename = `sketch_${Date.now()}.jpg`;
         const outputPath = path.join(__dirname, 'public', 'uploads', outputFilename);
         
         // Ensure uploads directory exists
@@ -376,19 +376,18 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        console.log('🎨 Cartoon effect parameters:');
-        console.log('   • Edge Size: 2 (medium edge thickness)');
-        console.log('   • Number of Colors: 6 (simplified color palette)');
-        console.log('   • Style: Classic cartoon effect');
+        console.log('🎨 Sketch effect parameters:');
+        console.log('   • Style: Pencil (soft graphite effect)');
+        console.log('   • Intensity: 0.8 (strong sketch lines)');
+        console.log('   • Effect: Professional pencil sketch drawing');
         
         // Prepare form data for Oyyi API
         const formData = new FormData();
         formData.append('file', fs.createReadStream(req.file.path));
-        formData.append('edge_size', '2');  // Medium edge thickness for clear cartoon lines
-        formData.append('num_colors', '6');  // Fewer colors for more cartoon-like appearance
+        // Note: Sketch API uses default parameters for best results
         
-        // Call Oyyi Cartoon API
-        const response = await axios.post('https://oyyi.xyz/api/image/cartoon', formData, {
+        // Call Oyyi Sketch API
+        const response = await axios.post('https://oyyi.xyz/api/image/sketch', formData, {
             headers: {
                 ...formData.getHeaders(),
                 'Accept': 'application/json'
@@ -401,7 +400,7 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             throw new Error(`Oyyi API returned status ${response.status}`);
         }
         
-        // Save the cartoon result
+        // Save the sketch result
         fs.writeFileSync(outputPath, response.data);
         
         // Clean up uploaded file
@@ -411,23 +410,23 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             console.warn('⚠️ Could not clean up uploaded file:', cleanupError.message);
         }
 
-        console.log('✅ Cartoon effect applied successfully!');
+        console.log('✅ Sketch effect applied successfully!');
 
         res.json({
             success: true,
-            message: 'Cartoon effect applied successfully!',
+            message: 'Sketch effect applied successfully!',
             filteredImage: `/uploads/${outputFilename}`,
             appliedEffects: {
-                style: 'Cartoon',
-                edgeSize: '2 (medium)',
-                numColors: '6 (simplified palette)',
-                effect: 'Classic cartoon style with clear edges and simplified colors'
+                style: 'Sketch',
+                drawingStyle: 'Pencil (soft graphite)',
+                intensity: '0.8 (strong lines)',
+                effect: 'Professional pencil sketch with smooth gradients'
             },
-            provider: 'Oyyi Cartoon API (Free)'
+            provider: 'Oyyi Sketch API (Free)'
         });
 
     } catch (error) {
-        console.error('❌ Cartoon filter error:', {
+        console.error('❌ Sketch filter error:', {
             message: error.message,
             stack: error.stack
         });
@@ -442,7 +441,7 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
         }
         
         // Handle specific API errors
-        let errorMessage = 'Cartoon processing error: ' + error.message;
+        let errorMessage = 'Sketch processing error: ' + error.message;
         if (error.response) {
             if (error.response.status === 400) {
                 errorMessage = 'Invalid image format or parameters';
@@ -465,31 +464,31 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
     }
 });
 
-// 🧪 TEST CARTOON FILTER API ENDPOINT
+// 🧪 TEST SKETCH FILTER API ENDPOINT
 app.get('/api/test-mood-filter', async (req, res) => {
-    console.log('🧪 Testing Cartoon Filter API configuration...');
+    console.log('🧪 Testing Sketch Filter API configuration...');
     
     res.json({
         success: true,
-        message: 'Cartoon Filter API is ready - completely FREE!',
+        message: 'Sketch Filter API is ready - completely FREE!',
         config: {
-            provider: 'Oyyi Cartoon API',
-            endpoint: 'https://oyyi.xyz/api/image/cartoon',
+            provider: 'Oyyi Sketch API',
+            endpoint: 'https://oyyi.xyz/api/image/sketch',
             cost: 'FREE',
             features: [
-                'Classic cartoon effect',
-                'Adjustable edge thickness (1-5)',
-                'Customizable color count (2-16)',
-                'Professional cartoon transformation',
+                'Professional pencil sketch effect',
+                'Soft graphite-like appearance',
+                'Smooth gradients and shading',
+                'Artistic drawing transformation',
                 'Supports JPEG, PNG, WebP, BMP, TIFF'
             ],
             parameters: {
-                edgeSize: '2 (medium edge thickness)',
-                numColors: '6 (simplified color palette)',
+                style: 'Pencil (default - soft graphite)',
+                intensity: '0.8 (strong sketch lines)',
                 maxFileSize: '10MB',
                 timeout: '30 seconds'
             },
-            note: 'Ready to transform photos into cartoon-style images!'
+            note: 'Ready to transform photos into beautiful pencil sketches!'
         }
     });
 });
