@@ -829,15 +829,57 @@ class ChatApp {
 
         if (!emojiBtn || !emojiPicker || !emojiGrid) return;
 
-        // Emoji data
+        // 🎭 EMOJI DATA - WhatsApp/Telegram Style Categories
         this.emojiData = {
-            smileys: ['😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😜', '🤔', '🤗', '🥳', '😎', '🤠', '🥸', '😇', '🙃', '😉', '😋', '😝', '🤪', '🤨', '🧐', '🤓', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣'],
-            hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💕', '💖', '💗', '💘', '💝', '💞', '💟', '♥️', '💔', '❣️', '💋', '💌', '💐', '🌹', '🌺', '🌻', '🌷'],
-            gestures: ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤙', '💪', '🙏', '✍️', '👏', '👐', '🤲', '🤝', '👊', '✊', '🤛', '🤜'],
-            objects: ['🎉', '🎊', '🎈', '🎂', '🎁', '🎀', '🏆', '🥇', '🏅', '⭐', '🌟', '✨', '💫', '🔥', '💯', '👑', '💎', '🎯', '🎮', '🎵', '🎶', '🎤', '🎧', '📱', '💻', '⌚', '📷', '🎬', '📺', '🕹️', '☕', '🍕']
+            recent: [], // Will be populated from localStorage
+            smileys: [
+                '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇',
+                '🥰', '😍', '🤩', '😘', '😗', '☺️', '😚', '😙', '😋', '😛', '😜', '🤪', '😝',
+                '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
+                '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵'
+            ],
+            animals: [
+                '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷',
+                '🐵', '🐸', '🐙', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🕷️', '🦂',
+                '🐢', '🐍', '🦎', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳',
+                '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦏', '🦛', '🐪', '🐫'
+            ],
+            food: [
+                '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥',
+                '🥝', '🍅', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🥒', '🥬', '🥦', '🧄', '🧅',
+                '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🧀', '🍖', '🍗', '🥩', '🥓', '🍔',
+                '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲', '☕'
+            ],
+            activity: [
+                '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🏒', '🏑',
+                '🥍', '🏏', '🥅', '⛳', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️',
+                '🥌', '🎿', '⛷️', '🏂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🏌️', '🏇', '🧘',
+                '🏄', '🏊', '🚴', '🚵', '🧗', '🤹', '🎪', '🎭', '🩰', '🎨', '🎬', '🎤', '🎧'
+            ],
+            travel: [
+                '🏠', '🏡', '🏘️', '🏚️', '🏗️', '🏭', '🏢', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨',
+                '🏪', '🏫', '🏩', '💒', '🏛️', '⛪', '🕌', '🕍', '🛕', '🗾', '🎑', '🏞️', '🌅',
+                '🌄', '🌠', '🎇', '🎆', '🌇', '🌆', '🏙️', '🌃', '🌌', '🌉', '🌁', '⛄', '❄️',
+                '☃️', '🌊', '💧', '🔥', '💥', '⭐', '🌟', '✨', '⚡', '☄️', '💫', '🌙', '☀️'
+            ],
+            objects: [
+                '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾',
+                '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠',
+                '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⏳', '⌛', '📡',
+                '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷'
+            ],
+            symbols: [
+                '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞',
+                '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯',
+                '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐',
+                '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸'
+            ]
         };
 
-        this.currentEmojiCategory = 'smileys';
+        this.recentEmojis = JSON.parse(localStorage.getItem('chatapp_recent_emojis') || '[]');
+        this.emojiData.recent = this.recentEmojis.slice(0, 32); // Show last 32 recent emojis
+        
+        this.currentEmojiCategory = 'recent';
         this.isEmojiPickerOpen = false;
 
         // Toggle emoji picker
@@ -863,8 +905,9 @@ class ChatApp {
             }
         });
 
-        // Load initial emojis
-        this.loadEmojis('smileys');
+        // Load initial emojis (recent or smileys if no recent)
+        const initialCategory = this.emojiData.recent.length > 0 ? 'recent' : 'smileys';
+        this.switchEmojiCategory(initialCategory);
     }
 
     toggleEmojiPicker() {
@@ -909,9 +952,21 @@ class ChatApp {
 
     loadEmojis(category) {
         const emojiGrid = document.getElementById('emoji-grid');
-        const emojis = this.emojiData[category] || [];
+        let emojis = this.emojiData[category] || [];
 
         emojiGrid.innerHTML = '';
+
+        // Special handling for recent emojis
+        if (category === 'recent' && emojis.length === 0) {
+            emojiGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: rgba(0,0,0,0.5);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤔</div>
+                    <div>No recent emojis yet!</div>
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">Start using emojis to see them here</div>
+                </div>
+            `;
+            return;
+        }
 
         emojis.forEach(emoji => {
             const emojiBtn = document.createElement('button');
@@ -945,10 +1000,36 @@ class ChatApp {
         messageInput.setSelectionRange(newCursorPos, newCursorPos);
         messageInput.focus();
 
-        // Hide emoji picker
-        this.hideEmojiPicker();
+        // 💾 Add to recent emojis (WhatsApp style)
+        this.addToRecentEmojis(emoji);
+
+        // Hide emoji picker with slight delay for better UX
+        setTimeout(() => {
+            this.hideEmojiPicker();
+        }, 150);
 
         console.log('🎯 Emoji inserted:', emoji);
+    }
+
+    // 🕒 RECENT EMOJIS MANAGEMENT
+    addToRecentEmojis(emoji) {
+        // Remove emoji if it already exists
+        this.recentEmojis = this.recentEmojis.filter(e => e !== emoji);
+        
+        // Add to beginning
+        this.recentEmojis.unshift(emoji);
+        
+        // Keep only last 32 emojis
+        this.recentEmojis = this.recentEmojis.slice(0, 32);
+        
+        // Update data and localStorage
+        this.emojiData.recent = this.recentEmojis;
+        localStorage.setItem('chatapp_recent_emojis', JSON.stringify(this.recentEmojis));
+        
+        // If currently viewing recent category, refresh it
+        if (this.currentEmojiCategory === 'recent') {
+            this.loadEmojis('recent');
+        }
     }
 }
 

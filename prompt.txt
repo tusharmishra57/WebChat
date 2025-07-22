@@ -24,3 +24,7 @@ Everything is working fine on render.
 Now I want to add some small features as well in it-
 1. In the emotion detection, I don't want to send the % of confidence to the user. I just want to send the current emotion detected.
 2. When I am chatting to other user, I want that i should be able to send emojies as well to the user.
+
+
+The emoji function is working. But the option is looking small and not visually pleasing.
+Take reference from Whatsapp and telegram's UI for this. Also take reference from whatsapp and telegram for sending functionality of emojies. The logo for emoji sending functionality is also not looking good.

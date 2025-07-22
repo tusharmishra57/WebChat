@@ -181,7 +181,7 @@
         <div class="message-input-container">
             <div class="message-input-wrapper">
                 <button id="emoji-btn" class="emoji-btn" title="Add emoji">
-                    <i class="fas fa-smile"></i>
+                    <span class="emoji-icon">😊</span>
                 </button>
                 <textarea id="message-input" class="message-input" placeholder="Type your message..." rows="1"></textarea>
                 <button id="send-btn" class="send-btn">
@@ -191,14 +191,38 @@
             
             <!-- Emoji Picker -->
             <div id="emoji-picker" class="emoji-picker hidden">
-                <div class="emoji-categories">
-                    <button class="emoji-category active" data-category="smileys">😀</button>
-                    <button class="emoji-category" data-category="hearts">❤️</button>
-                    <button class="emoji-category" data-category="gestures">👍</button>
-                    <button class="emoji-category" data-category="objects">🎉</button>
+                <div class="emoji-picker-header">
+                    <div class="emoji-categories">
+                        <button class="emoji-category active" data-category="recent" title="Recently Used">
+                            <span class="category-icon">🕒</span>
+                        </button>
+                        <button class="emoji-category" data-category="smileys" title="Smileys & People">
+                            <span class="category-icon">😀</span>
+                        </button>
+                        <button class="emoji-category" data-category="animals" title="Animals & Nature">
+                            <span class="category-icon">🐶</span>
+                        </button>
+                        <button class="emoji-category" data-category="food" title="Food & Drink">
+                            <span class="category-icon">🍕</span>
+                        </button>
+                        <button class="emoji-category" data-category="activity" title="Activity & Sports">
+                            <span class="category-icon">⚽</span>
+                        </button>
+                        <button class="emoji-category" data-category="travel" title="Travel & Places">
+                            <span class="category-icon">🏠</span>
+                        </button>
+                        <button class="emoji-category" data-category="objects" title="Objects">
+                            <span class="category-icon">💡</span>
+                        </button>
+                        <button class="emoji-category" data-category="symbols" title="Symbols">
+                            <span class="category-icon">❤️</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="emoji-grid" id="emoji-grid">
-                    <!-- Emojis will be populated here -->
+                <div class="emoji-content">
+                    <div class="emoji-grid" id="emoji-grid">
+                        <!-- Emojis will be populated here -->
+                    </div>
                 </div>
             </div>
         </div>
