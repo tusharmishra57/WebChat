@@ -1,7 +1,7 @@
 {
   "name": "chat-app",
   "version": "1.0.0",
-  "description": "A real-time chat application with emotion detection and sketch filters",
+  "description": "A real-time chat application with emotion detection and cartoon filters",
   "main": "server.js",
   "engines": {
     "node": ">=14.0.0"

@@ -341,9 +341,9 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// 🎨 SKETCH FILTER API ENDPOINT - Using Oyyi Sketch Effect API
+// 🎨 CARTOON FILTER API ENDPOINT - Using Nero AI ImageToImage API
 app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
-    console.log('🎨 Sketch Filter API called - Using Oyyi API');
+    console.log('🎨 Cartoon Filter API called - Using Nero AI');
     
     try {
         if (!req.file) {
@@ -360,14 +360,14 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filename: req.file.filename
         });
 
-        console.log('🎨 Applying sketch effect using Oyyi API...');
+        console.log('🎨 Applying cartoon effect using Nero AI...');
         
         const fs = require('fs');
         const path = require('path');
         const FormData = require('form-data');
         
         // Create output filename
-        const outputFilename = `sketch_${Date.now()}.jpg`;
+        const outputFilename = `cartoon_${Date.now()}.jpg`;
         const outputPath = path.join(__dirname, 'public', 'uploads', outputFilename);
         
         // Ensure uploads directory exists
@@ -376,32 +376,90 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        console.log('🎨 Sketch effect parameters:');
-        console.log('   • Style: Pencil (soft graphite effect)');
-        console.log('   • Intensity: 0.8 (strong sketch lines)');
-        console.log('   • Effect: Professional pencil sketch drawing');
+        console.log('🎨 Cartoon effect parameters:');
+        console.log('   • Style: Cartoon (3D cartoon anime style)');
+        console.log('   • Provider: Nero AI ImageToImage API');
+        console.log('   • Processing: Asynchronous with task polling');
         
-        // Prepare form data for Oyyi API
+        // Step 1: Create task with Nero AI
         const formData = new FormData();
-        formData.append('file', fs.createReadStream(req.file.path));
-        // Note: Sketch API uses default parameters for best results
+        const payload = {
+            type: 'ImageToImage',
+            body: {
+                style_id: 'Cartoon_img',  // Default cartoon style
+                count: 1,
+                HD: false
+            }
+        };
         
-        // Call Oyyi Sketch API
-        const response = await axios.post('https://oyyi.xyz/api/image/sketch', formData, {
+        formData.append('payload', JSON.stringify(payload));
+        formData.append('file', fs.createReadStream(req.file.path));
+        
+        console.log('📤 Creating Nero AI task...');
+        const taskResponse = await axios.post('https://api.nero.com/biz/api/task', formData, {
             headers: {
-                ...formData.getHeaders(),
-                'Accept': 'application/json'
+                'x-neroai-api-key': '2BN6K16CCHQU3JVCJ2S8U5HU',
+                ...formData.getHeaders()
             },
-            responseType: 'arraybuffer',  // Important: get binary data
-            timeout: 30000  // 30 second timeout
+            timeout: 30000
         });
         
-        if (response.status !== 200) {
-            throw new Error(`Oyyi API returned status ${response.status}`);
+        if (taskResponse.data.code !== 0) {
+            throw new Error(`Nero AI task creation failed: ${taskResponse.data.msg || 'Unknown error'}`);
         }
         
-        // Save the sketch result
-        fs.writeFileSync(outputPath, response.data);
+        const taskId = taskResponse.data.data.task_id;
+        console.log('✅ Task created successfully:', taskId);
+        
+        // Step 2: Poll for results
+        console.log('⏳ Polling for results...');
+        let attempts = 0;
+        const maxAttempts = 30; // 30 attempts = ~60 seconds max wait
+        let result = null;
+        
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+            attempts++;
+            
+            console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}...`);
+            
+            const pollResponse = await axios.get(`https://api.nero.com/biz/api/task?task_id=${taskId}`, {
+                headers: {
+                    'x-neroai-api-key': '2BN6K16CCHQU3JVCJ2S8U5HU'
+                },
+                timeout: 10000
+            });
+            
+            if (pollResponse.data.code !== 0) {
+                throw new Error(`Nero AI polling failed: ${pollResponse.data.msg || 'Unknown error'}`);
+            }
+            
+            const status = pollResponse.data.data.status;
+            console.log(`📊 Task status: ${status}`);
+            
+            if (status === 'done') {
+                result = pollResponse.data.data.result;
+                break;
+            } else if (status === 'failed') {
+                throw new Error(`Nero AI processing failed: ${pollResponse.data.data.msg || 'Processing failed'}`);
+            }
+            // Continue polling for 'pending' or 'running' status
+        }
+        
+        if (!result) {
+            throw new Error('Nero AI processing timeout - please try again');
+        }
+        
+        // Step 3: Download and save the result
+        console.log('📥 Downloading cartoon result...');
+        const imageUrl = result.outputs[0]; // Get first output image
+        
+        const imageResponse = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+        
+        fs.writeFileSync(outputPath, imageResponse.data);
         
         // Clean up uploaded file
         try {
@@ -410,23 +468,24 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             console.warn('⚠️ Could not clean up uploaded file:', cleanupError.message);
         }
 
-        console.log('✅ Sketch effect applied successfully!');
+        console.log('✅ Cartoon effect applied successfully!');
 
         res.json({
             success: true,
-            message: 'Sketch effect applied successfully!',
+            message: 'Cartoon effect applied successfully!',
             filteredImage: `/uploads/${outputFilename}`,
             appliedEffects: {
-                style: 'Sketch',
-                drawingStyle: 'Pencil (soft graphite)',
-                intensity: '0.8 (strong lines)',
-                effect: 'Professional pencil sketch with smooth gradients'
+                style: 'Cartoon',
+                type: '3D cartoon anime style',
+                provider: 'Nero AI ImageToImage',
+                processing: 'Advanced AI neural network'
             },
-            provider: 'Oyyi Sketch API (Free)'
+            provider: 'Nero AI (Professional)',
+            taskId: taskId
         });
 
     } catch (error) {
-        console.error('❌ Sketch filter error:', {
+        console.error('❌ Cartoon filter error:', {
             message: error.message,
             stack: error.stack
         });
@@ -441,54 +500,56 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
         }
         
         // Handle specific API errors
-        let errorMessage = 'Sketch processing error: ' + error.message;
+        let errorMessage = 'Cartoon processing error: ' + error.message;
         if (error.response) {
             if (error.response.status === 400) {
                 errorMessage = 'Invalid image format or parameters';
             } else if (error.response.status === 413) {
-                errorMessage = 'Image file too large (max 10MB)';
+                errorMessage = 'Image file too large (max 50MB)';
             } else if (error.response.status === 500) {
-                errorMessage = 'Oyyi API server error - please try again';
+                errorMessage = 'Nero AI server error - please try again';
+            } else if (error.response.status === 429) {
+                errorMessage = 'Rate limit exceeded - please wait and try again';
             }
         } else if (error.code === 'ECONNABORTED') {
             errorMessage = 'Request timeout - please try with a smaller image';
         } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'Cannot connect to Oyyi API - please check internet connection';
+            errorMessage = 'Cannot connect to Nero AI - please check internet connection';
         }
         
-        return res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: errorMessage,
             error: error.message
         });
     }
 });
 
-// 🧪 TEST SKETCH FILTER API ENDPOINT
+// 🧪 TEST CARTOON FILTER API ENDPOINT
 app.get('/api/test-mood-filter', async (req, res) => {
-    console.log('🧪 Testing Sketch Filter API configuration...');
+    console.log('🧪 Testing Cartoon Filter API configuration...');
     
     res.json({
         success: true,
-        message: 'Sketch Filter API is ready - completely FREE!',
+        message: 'Cartoon Filter API is ready - Professional Quality!',
         config: {
-            provider: 'Oyyi Sketch API',
-            endpoint: 'https://oyyi.xyz/api/image/sketch',
-            cost: 'FREE',
+            provider: 'Nero AI ImageToImage',
+            endpoint: 'https://api.nero.com/biz/api/task',
+            cost: 'PAID (Credits)',
             features: [
-                'Professional pencil sketch effect',
-                'Soft graphite-like appearance',
-                'Smooth gradients and shading',
-                'Artistic drawing transformation',
-                'Supports JPEG, PNG, WebP, BMP, TIFF'
+                '3D cartoon anime style transformation',
+                'Professional AI neural network processing',
+                'High-quality cartoon conversion',
+                'Asynchronous processing with polling',
+                'Supports JPG, JPEG, PNG, BMP, WEBP'
             ],
             parameters: {
-                style: 'Pencil (default - soft graphite)',
-                intensity: '0.8 (strong sketch lines)',
-                maxFileSize: '10MB',
-                timeout: '30 seconds'
+                style: 'Cartoon_img (3D cartoon anime)',
+                maxFileSize: '50MB',
+                timeout: '60 seconds',
+                processing: 'Asynchronous with task polling'
             },
-            note: 'Ready to transform photos into beautiful pencil sketches!'
+            note: 'NEW: Professional cartoon filter using Nero AI - creates amazing cartoon effects!'
         }
     });
 });
