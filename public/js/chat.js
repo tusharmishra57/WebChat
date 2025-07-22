@@ -155,7 +155,7 @@ class ChatController {
         const resultContainer = document.getElementById('emotion-result');
         
         if (emotionText) emotionText.textContent = emotionData.emotion;
-        if (confidenceText) confidenceText.textContent = `${Math.round(emotionData.confidence * 100)}% confidence`;
+        if (confidenceText) confidenceText.style.display = 'none'; // Hide confidence text
         if (resultContainer) resultContainer.classList.remove('hidden');
         
         // Hide capture button

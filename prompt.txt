@@ -17,3 +17,10 @@ c. Their will be a MOOD option in the Chat Page where user can capture their ima
 10. The API's that I am going to use are for following functinalities - Emotion detection (camera will open and identify face then tell current emotion), MOOD filter (open camera, capture image, convert it to ghibli or some kind of filtered image)
 11. User should be able to send the detected emotion and filtered image to the freind he is talking to.
 12. I want to use this website mainly in smartphone so make it responsive accordingly.
+
+
+
+Everything is working fine on render.
+Now I want to add some small features as well in it-
+1. In the emotion detection, I don't want to send the % of confidence to the user. I just want to send the current emotion detected.
+2. When I am chatting to other user, I want that i should be able to send emojies as well to the user.
