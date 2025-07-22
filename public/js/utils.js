@@ -502,12 +502,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set up global error handling
     window.addEventListener('error', (event) => {
         console.error('Global error:', event.error);
-        showToast('An unexpected error occurred', 'error');
+        // Only show toast for critical errors, not minor ones
+        if (event.error && !event.error.message.includes('showToast')) {
+            showToast('Something went wrong. Please refresh if needed.', 'error');
+        }
     });
 
     // Set up unhandled promise rejection handling
     window.addEventListener('unhandledrejection', (event) => {
         console.error('Unhandled promise rejection:', event.reason);
-        showToast('An unexpected error occurred', 'error');
+        // Only show toast for critical errors
+        if (event.reason && !event.reason.message?.includes('showToast')) {
+            showToast('Connection issue. Please refresh if needed.', 'error');
+        }
     });
 });

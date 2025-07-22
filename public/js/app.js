@@ -113,20 +113,20 @@ class ChatApp {
             
             // Only show toast for unexpected disconnections
             if (reason !== 'io client disconnect') {
-                this.showToast('Connection lost. Reconnecting...', 'error');
+                showToast('Connection lost. Reconnecting...', 'error');
             }
         });
 
         this.socket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
             this.updateConnectionStatus('disconnected');
-            this.showToast('Connection failed. Please refresh the page.', 'error');
+            showToast('Connection failed. Please refresh the page.', 'error');
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
             console.log('✅ Reconnected to server after', attemptNumber, 'attempts');
             this.updateConnectionStatus('connected');
-            this.showToast('Reconnected successfully!', 'success');
+            showToast('Reconnected successfully!', 'success');
         });
 
         this.socket.on('reconnect_error', (error) => {
@@ -150,12 +150,12 @@ class ChatApp {
         // Join success/error
         this.socket.on('join_success', (data) => {
             console.log('✅ Successfully joined chat:', data);
-            this.showToast('Connected to chat!', 'success');
+            showToast('Connected to chat!', 'success');
         });
 
         this.socket.on('join_error', (error) => {
             console.error('❌ Join error:', error);
-            this.showToast('Failed to join chat: ' + error.error, 'error');
+            showToast('Failed to join chat: ' + error.error, 'error');
         });
 
         // Message received from another user
@@ -173,7 +173,7 @@ class ChatApp {
         // Message error
         this.socket.on('message_error', (error) => {
             console.error('❌ Message error:', error);
-            this.showToast('Message failed: ' + error.error, 'error');
+            showToast('Message failed: ' + error.error, 'error');
         });
 
         // Typing indicators
@@ -523,7 +523,7 @@ class ChatApp {
 
         // Check socket connection
         if (!this.socket || !this.socket.connected) {
-            this.showToast('Not connected to server. Please refresh the page.', 'error');
+            showToast('Not connected to server. Please refresh the page.', 'error');
             return;
         }
 
@@ -544,7 +544,7 @@ class ChatApp {
             this.socket.emit('send_message', messageData, (response) => {
                 if (response && !response.success) {
                     console.error('❌ Message send failed:', response.error);
-                    this.showToast('Failed to send: ' + response.error, 'error');
+                    showToast('Failed to send: ' + response.error, 'error');
                 } else {
                     console.log('✅ Message sent successfully:', response);
                 }
@@ -556,7 +556,7 @@ class ChatApp {
             
         } catch (error) {
             console.error('❌ Send message error:', error);
-            this.showToast('Failed to send message. Please try again.', 'error');
+            showToast('Failed to send message. Please try again.', 'error');
         }
     }
 
@@ -577,7 +577,7 @@ class ChatApp {
         
         // Show toast notification
         const senderName = message.sender.username || 'Someone';
-        this.showToast(`New message from ${senderName}`, 'info');
+        showToast(`New message from ${senderName}`, 'info');
     }
 
     // Handle sent message confirmation
