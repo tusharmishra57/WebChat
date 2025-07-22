@@ -249,10 +249,13 @@ class ChatApp {
             }
         });
 
-        // Escape key to close modals
+        // Escape key to close modals and emoji picker
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideAllModals();
+                if (this.isEmojiPickerOpen) {
+                    this.hideEmojiPicker();
+                }
             }
         });
     }
@@ -898,6 +901,15 @@ class ChatApp {
             });
         });
 
+        // Close button
+        const closeEmojiBtn = document.getElementById('close-emoji-picker');
+        if (closeEmojiBtn) {
+            closeEmojiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideEmojiPicker();
+            });
+        }
+
         // Close on outside click
         document.addEventListener('click', (e) => {
             if (this.isEmojiPickerOpen && !emojiPicker.contains(e.target) && !emojiBtn.contains(e.target)) {
@@ -977,6 +989,14 @@ class ChatApp {
             emojiBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.insertEmoji(emoji);
+                
+                // Visual feedback - brief highlight
+                emojiBtn.style.transform = 'scale(1.3)';
+                emojiBtn.style.background = 'rgba(102, 126, 234, 0.3)';
+                setTimeout(() => {
+                    emojiBtn.style.transform = '';
+                    emojiBtn.style.background = '';
+                }, 150);
             });
 
             emojiGrid.appendChild(emojiBtn);
@@ -1003,11 +1023,9 @@ class ChatApp {
         // 💾 Add to recent emojis (WhatsApp style)
         this.addToRecentEmojis(emoji);
 
-        // Hide emoji picker with slight delay for better UX
-        setTimeout(() => {
-            this.hideEmojiPicker();
-        }, 150);
-
+        // Keep emoji picker open for multiple selections (like WhatsApp)
+        // Only hide if user clicks outside or presses escape
+        
         console.log('🎯 Emoji inserted:', emoji);
     }
 

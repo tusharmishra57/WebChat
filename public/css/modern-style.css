@@ -809,36 +809,48 @@ body::before {
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
-/* 😊 EMOJI BUTTON - WhatsApp Style */
+/* 📝 MESSAGE INPUT WRAPPER - Proper Alignment */
+.message-input-wrapper {
+    display: flex;
+    align-items: flex-end; /* Align with bottom of textarea */
+    gap: 8px;
+    width: 100%;
+}
+
+/* 😊 EMOJI BUTTON - Aligned with Input */
 .emoji-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 22px;
+    width: 50px; /* Match min-height of message input */
+    height: 50px; /* Match min-height of message input */
+    border-radius: 25px;
     background: rgba(255, 255, 255, 0.1);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 8px;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0; /* Prevent shrinking */
+    backdrop-filter: blur(10px);
 }
 
 .emoji-btn .emoji-icon {
-    font-size: 20px;
+    font-size: 22px;
     transition: all 0.2s ease;
 }
 
 .emoji-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
 }
 
 .emoji-btn.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    transform: scale(1.05);
+    border-color: rgba(102, 126, 234, 0.3);
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
 }
 
 .emoji-btn.active .emoji-icon {
@@ -876,9 +888,41 @@ body::before {
 
 /* 📋 EMOJI PICKER HEADER */
 .emoji-picker-header {
-    padding: 16px 20px 12px;
+    padding: 12px 20px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     background: rgba(255, 255, 255, 0.1);
+}
+
+.emoji-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.emoji-title {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 16px;
+}
+
+.close-emoji-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.close-emoji-btn:hover {
+    background: rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
 }
 
 /* 📁 EMOJI CATEGORIES - WhatsApp Style */
@@ -1007,7 +1051,20 @@ body::before {
     }
 
     .emoji-picker-header {
-        padding: 12px 16px 8px;
+        padding: 10px 16px;
+    }
+
+    .emoji-header-top {
+        margin-bottom: 10px;
+    }
+
+    .emoji-title {
+        font-size: 14px;
+    }
+
+    .close-emoji-btn {
+        width: 28px;
+        height: 28px;
     }
 
     .emoji-categories {
@@ -1044,15 +1101,22 @@ body::before {
         position: relative;
     }
 
-    /* Improved touch targets for mobile */
+    /* Maintain proper alignment on mobile */
     .emoji-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 20px;
+        width: 46px; /* Slightly smaller for mobile but still aligned */
+        height: 46px;
+        border-radius: 23px;
     }
 
     .emoji-btn .emoji-icon {
-        font-size: 18px;
+        font-size: 20px;
+    }
+
+    /* Ensure send button matches on mobile */
+    .send-btn {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
     }
 }
 
