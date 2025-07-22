@@ -143,6 +143,7 @@ class ChatApp {
         });
 
         this.socket.on('online_users', (users) => {
+            console.log('📡 Received online users via Socket.IO:', users);
             this.updateOnlineUsers(users);
         });
 
@@ -272,7 +273,10 @@ class ChatApp {
         if (user) {
             this.currentChatUser = user;
             this.updateChatHeader(user);
-            this.loadChatMessages(user.id);
+            // Handle both user.id and user._id formats
+            const userId = user.id || user._id;
+            console.log('📱 Starting chat with user:', user.username, 'ID:', userId);
+            this.loadChatMessages(userId);
         } else {
             // Self chat
             this.currentChatUser = this.currentUser;
@@ -314,6 +318,7 @@ class ChatApp {
 
             if (response.ok) {
                 const users = await response.json();
+                console.log('🌐 Received online users via HTTP:', users);
                 this.updateOnlineUsers(users);
             }
         } catch (error) {
@@ -322,12 +327,14 @@ class ChatApp {
     }
 
     updateOnlineUsers(users) {
+        console.log('👥 Updating online users:', users);
         const container = document.getElementById('online-users');
         if (!container) return;
 
         container.innerHTML = '';
 
         if (users.length === 0) {
+            console.log('👥 No users to display');
             container.innerHTML = `
                 <div class="no-users">
                     <p>No other users online right now</p>
@@ -337,6 +344,7 @@ class ChatApp {
         }
 
         users.forEach(user => {
+            console.log('👤 Creating card for user:', user);
             const userCard = document.createElement('div');
             userCard.className = 'user-card';
             userCard.innerHTML = `
@@ -348,6 +356,7 @@ class ChatApp {
             `;
 
             userCard.addEventListener('click', () => {
+                console.log('🖱️ User card clicked:', user);
                 this.startChat(user);
             });
 
@@ -368,6 +377,7 @@ class ChatApp {
     }
 
     startChat(user) {
+        console.log('🚀 Starting chat with user:', user);
         this.showChatPage(user);
     }
 
@@ -517,10 +527,12 @@ class ChatApp {
         };
 
         try {
-            // Add receiver ID to message data
-            messageData.receiverId = this.currentChatUser.id;
+            // Add receiver ID to message data - handle both id and _id formats
+            const receiverId = this.currentChatUser.id || this.currentChatUser._id;
+            messageData.receiverId = receiverId;
             
-            console.log('📤 Sending message:', messageData);
+            console.log('📤 Sending message to:', this.currentChatUser.username, 'ID:', receiverId);
+            console.log('📤 Message data:', messageData);
             
             // Use unified message handler
             this.socket.emit('send_message', messageData, (response) => {

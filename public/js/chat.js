@@ -182,10 +182,11 @@ class ChatController {
             emotionData: this.currentEmotion
         };
 
-        // Add receiver ID and send using unified handler
-        messageData.receiverId = window.chatApp.currentChatUser.id;
+        // Add receiver ID and send using unified handler - handle both id and _id formats
+        const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
+        messageData.receiverId = receiverId;
         
-        console.log('📤 Sending emotion message:', messageData);
+        console.log('📤 Sending emotion message to:', window.chatApp.currentChatUser.username, 'ID:', receiverId);
         
         window.chatApp.socket.emit('send_message', messageData, (response) => {
             if (response && !response.success) {
@@ -349,10 +350,11 @@ class ChatController {
             imageUrl: this.currentMoodImage
         };
 
-        // Add receiver ID and send using unified handler
-        messageData.receiverId = window.chatApp.currentChatUser.id;
+        // Add receiver ID and send using unified handler - handle both id and _id formats
+        const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
+        messageData.receiverId = receiverId;
         
-        console.log('📤 Sending mood message:', messageData);
+        console.log('📤 Sending mood message to:', window.chatApp.currentChatUser.username, 'ID:', receiverId);
         
         window.chatApp.socket.emit('send_message', messageData, (response) => {
             if (response && !response.success) {

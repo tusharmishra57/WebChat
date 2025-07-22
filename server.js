@@ -224,8 +224,19 @@ app.get('/api/users/online', authenticateToken, async (req, res) => {
     try {
         const users = await User.find({ isOnline: true, _id: { $ne: req.user.userId } })
             .select('username profilePicture lastSeen');
-        res.json(users);
+        
+        // Format users to match Socket.IO format (id instead of _id)
+        const formattedUsers = users.map(user => ({
+            id: user._id.toString(),
+            username: user.username,
+            profilePicture: user.profilePicture,
+            lastSeen: user.lastSeen
+        }));
+        
+        console.log('📡 Sending online users via HTTP:', formattedUsers);
+        res.json(formattedUsers);
     } catch (error) {
+        console.error('❌ Error in /api/users/online:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
