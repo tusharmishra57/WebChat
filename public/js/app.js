@@ -499,9 +499,12 @@ class ChatApp {
                 </div>
             `;
         } else {
+            // Check if message contains only emojis
+            const emojiOnlyClass = this.isEmojiOnly(message.content) ? 'emoji-only' : '';
+            
             messageContent = `
                 <div class="message-content">
-                    <p class="message-text">${escapeHtml(message.content)}</p>
+                    <p class="message-text ${emojiOnlyClass}">${escapeHtml(message.content)}</p>
                     <div class="message-time">${formatTime(message.timestamp)}</div>
                 </div>
             `;
@@ -1027,6 +1030,23 @@ class ChatApp {
         // Only hide if user clicks outside or presses escape
         
         console.log('🎯 Emoji inserted:', emoji);
+    }
+
+    // 🤔 CHECK IF MESSAGE CONTAINS ONLY EMOJIS
+    isEmojiOnly(text) {
+        if (!text || text.trim().length === 0) return false;
+        
+        // Remove all whitespace and check if remaining text is only emojis
+        const cleanText = text.replace(/\s/g, '');
+        
+        // Simple emoji detection - this will match most common emojis
+        const emojiRegex = /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]+$/u;
+        
+        // Also check for length - if it's just a few characters and no letters/numbers, likely emojis
+        const hasLettersOrNumbers = /[a-zA-Z0-9]/.test(cleanText);
+        const isShort = cleanText.length <= 10; // Up to ~5 emojis
+        
+        return (emojiRegex.test(cleanText) || (!hasLettersOrNumbers && isShort));
     }
 
     // 🕒 RECENT EMOJIS MANAGEMENT
