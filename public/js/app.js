@@ -481,11 +481,20 @@ class ChatApp {
         let messageContent = '';
 
         if (message.messageType === 'emotion') {
+            // 🎨 Apply different colors based on emotion
+            const emotionClass = `emotion-${message.emotionData.emotion.toLowerCase()}`;
+            
+            // 🎭 Emoji mapping for each emotion
+            let emotionEmoji = '😐'; // Default neutral
+            if (message.emotionData.emotion === 'Happy') emotionEmoji = '😊';
+            else if (message.emotionData.emotion === 'Angry') emotionEmoji = '😡';
+            
             messageContent = `
                 <div class="message-content emotion-message">
                     <div class="emotion-display">
-                        <span class="emotion-text">${message.emotionData.emotion}</span>
-
+                        <span class="emotion-text ${emotionClass}">
+                            ${message.emotionData.emotion} ${emotionEmoji}
+                        </span>
                     </div>
                     <div class="message-time">${formatTime(message.timestamp)}</div>
                 </div>

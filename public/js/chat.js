@@ -121,7 +121,9 @@ class ChatController {
             try {
                 // For now, simulate emotion detection
                 // In production, you would send this to your emotion detection API
+                console.log('🎭 Starting emotion detection...');
                 const mockEmotion = await this.simulateEmotionDetection(blob);
+                console.log('🎭 Emotion detection result:', mockEmotion);
                 
                 this.displayEmotionResult(mockEmotion);
             } catch (error) {
@@ -135,18 +137,43 @@ class ChatController {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Mock emotions with random selection
-        const emotions = [
-            { emotion: 'happy', confidence: 0.85 },
-            { emotion: 'sad', confidence: 0.72 },
-            { emotion: 'surprised', confidence: 0.91 },
-            { emotion: 'angry', confidence: 0.68 },
-            { emotion: 'neutral', confidence: 0.79 },
-            { emotion: 'excited', confidence: 0.88 },
-            { emotion: 'confused', confidence: 0.65 }
+        // 🎯 FIXED: Only detect Happy, Neutral, and Angry emotions - NO CONSECUTIVE REPEATS
+        console.log('🚨 USING CHAT.JS EMOTION FUNCTION - NO CONSECUTIVE DUPLICATES!');
+        
+        let availableEmotions = [
+            { emotion: 'Happy', confidence: 0.85 + Math.random() * 0.1 },
+            { emotion: 'Neutral', confidence: 0.79 + Math.random() * 0.15 },
+            { emotion: 'Angry', confidence: 0.82 + Math.random() * 0.12 }
         ];
         
-        return emotions[Math.floor(Math.random() * emotions.length)];
+        // 🚫 Filter out the last detected emotion to prevent consecutive duplicates
+        if (window.lastDetectedEmotion) {
+            const filteredEmotions = availableEmotions.filter(e => e.emotion !== window.lastDetectedEmotion);
+            
+            // Only use filtered emotions if we have alternatives, otherwise allow repeat
+            if (filteredEmotions.length > 0) {
+                availableEmotions = filteredEmotions;
+                console.log(`🚫 Filtered out last emotion: ${window.lastDetectedEmotion}`);
+            } else {
+                console.log(`⚠️ No alternatives available, allowing repeat of: ${window.lastDetectedEmotion}`);
+            }
+        }
+        
+        // DEBUG: Show available emotions after filtering
+        console.log('Available emotions (after filter):', availableEmotions.map(e => e.emotion));
+        
+        const selectedEmotion = availableEmotions[Math.floor(Math.random() * availableEmotions.length)];
+        
+        // Ensure confidence doesn't exceed 1.0
+        selectedEmotion.confidence = Math.min(selectedEmotion.confidence, 0.99);
+
+        // 💾 Store this emotion as the last detected for next time
+        window.lastDetectedEmotion = selectedEmotion.emotion;
+
+        console.log('🎭 Emotion detected (chat.js):', selectedEmotion.emotion, 'with confidence:', selectedEmotion.confidence.toFixed(2));
+        console.log('💾 Stored as last emotion for next detection');
+        
+        return selectedEmotion;
     }
 
     displayEmotionResult(emotionData) {
@@ -154,7 +181,19 @@ class ChatController {
         const confidenceText = document.getElementById('emotion-confidence');
         const resultContainer = document.getElementById('emotion-result');
         
-        if (emotionText) emotionText.textContent = emotionData.emotion;
+        if (emotionText) {
+            // 🎨 Apply emotion-specific styling and emoji
+            const emotionClass = `emotion-${emotionData.emotion.toLowerCase()}`;
+            
+            // 🎭 Emoji mapping for each emotion
+            let emotionEmoji = '😐'; // Default neutral
+            if (emotionData.emotion === 'Happy') emotionEmoji = '😊';
+            else if (emotionData.emotion === 'Angry') emotionEmoji = '😡';
+            
+            emotionText.textContent = `${emotionData.emotion} ${emotionEmoji}`;
+            emotionText.className = `emotion-text ${emotionClass}`;
+        }
+        
         if (confidenceText) confidenceText.style.display = 'none'; // Hide confidence text
         if (resultContainer) resultContainer.classList.remove('hidden');
         
@@ -164,7 +203,15 @@ class ChatController {
         // Store emotion data for sending
         this.currentEmotion = emotionData;
         
-        showToast(`Emotion detected: ${emotionData.emotion}`, 'success');
+        // 🎉 Enhanced success message with emoji
+        let successMessage = '😐 Neutral emotion detected! You look calm and balanced!';
+        if (emotionData.emotion === 'Happy') {
+            successMessage = '😊 Happy emotion detected! You look cheerful!';
+        } else if (emotionData.emotion === 'Angry') {
+            successMessage = '😡 Angry emotion detected! You look intense!';
+        }
+            
+        showToast(successMessage, 'success');
     }
 
     sendEmotionMessage() {

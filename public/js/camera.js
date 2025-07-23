@@ -133,23 +133,42 @@ class CameraController {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const emotions = [
-            { emotion: 'happy', confidence: 0.85 + Math.random() * 0.1 },
-            { emotion: 'sad', confidence: 0.72 + Math.random() * 0.15 },
-            { emotion: 'surprised', confidence: 0.91 + Math.random() * 0.08 },
-            { emotion: 'angry', confidence: 0.68 + Math.random() * 0.2 },
-            { emotion: 'neutral', confidence: 0.79 + Math.random() * 0.1 },
-            { emotion: 'excited', confidence: 0.88 + Math.random() * 0.1 },
-            { emotion: 'confused', confidence: 0.65 + Math.random() * 0.2 },
-            { emotion: 'focused', confidence: 0.82 + Math.random() * 0.15 },
-            { emotion: 'relaxed', confidence: 0.76 + Math.random() * 0.12 }
+        // 🎯 EMOTION DETECTION - Only Happy, Neutral, and Angry - NO CONSECUTIVE REPEATS
+        console.log('🚨 USING CAMERA.JS EMOTION FUNCTION - NO CONSECUTIVE DUPLICATES!');
+        
+        let availableEmotions = [
+            { emotion: 'Happy', confidence: 0.85 + Math.random() * 0.1 },
+            { emotion: 'Neutral', confidence: 0.79 + Math.random() * 0.15 },
+            { emotion: 'Angry', confidence: 0.82 + Math.random() * 0.12 }
         ];
+        
+        // 🚫 Filter out the last detected emotion to prevent consecutive duplicates
+        if (window.lastDetectedEmotion) {
+            const filteredEmotions = availableEmotions.filter(e => e.emotion !== window.lastDetectedEmotion);
+            
+            // Only use filtered emotions if we have alternatives, otherwise allow repeat
+            if (filteredEmotions.length > 0) {
+                availableEmotions = filteredEmotions;
+                console.log(`🚫 Filtered out last emotion: ${window.lastDetectedEmotion}`);
+            } else {
+                console.log(`⚠️ No alternatives available, allowing repeat of: ${window.lastDetectedEmotion}`);
+            }
+        }
+        
+        // DEBUG: Show available emotions after filtering
+        console.log('Available emotions (after filter):', availableEmotions.map(e => e.emotion));
 
-        const selectedEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+        const selectedEmotion = availableEmotions[Math.floor(Math.random() * availableEmotions.length)];
         
         // Ensure confidence doesn't exceed 1.0
         selectedEmotion.confidence = Math.min(selectedEmotion.confidence, 0.99);
 
+        // 💾 Store this emotion as the last detected for next time
+        window.lastDetectedEmotion = selectedEmotion.emotion;
+
+        console.log('🎭 Emotion detected (camera.js):', selectedEmotion.emotion, 'with confidence:', selectedEmotion.confidence.toFixed(2));
+        console.log('💾 Stored as last emotion for next detection');
+        
         return selectedEmotion;
     }
 
