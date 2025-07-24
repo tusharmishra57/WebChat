@@ -232,9 +232,9 @@ class ChatApp {
             this.handleProfilePictureChange(e);
         });
 
-        // Logout with confirmation
+        // Direct logout without confirmation
         document.getElementById('logout-btn')?.addEventListener('click', () => {
-            this.showLogoutConfirmation();
+            this.logout();
         });
 
         // Message input
@@ -368,7 +368,7 @@ class ChatApp {
                 console.log('🌐 Received online users via HTTP:', users);
                 this.updateOnlineUsers(users);
             } else if (response.status === 401 || response.status === 403) {
-                // Authentication failed
+                // Authentication failed - silent logout and refresh
                 this.handleAuthError();
                 return;
             }
@@ -1132,29 +1132,15 @@ class ChatApp {
         // Hide new messages indicator
         this.hideNewMessagesIndicator();
 
-        // Show login page
-        console.log('🔐 Redirecting to login page...');
-        this.showLoginPage();
-        
-        // Show success message
-        showToast('Logged out successfully', 'success');
-        
-        console.log('✅ Logout completed successfully');
+        // Automatically refresh the page to show login page
+        console.log('🔄 Refreshing page to show login...');
+        window.location.reload();
     }
 
     // Handle automatic logout when authentication fails
     handleAuthError() {
         console.log('🔒 Authentication error detected, logging out automatically...');
-        showToast('Session expired. Please login again.', 'warning');
         this.logout();
-    }
-
-    // Show logout confirmation dialog
-    showLogoutConfirmation() {
-        const confirmed = confirm('Are you sure you want to logout?');
-        if (confirmed) {
-            this.logout();
-        }
     }
 
     // 😊 EMOJI PICKER FUNCTIONALITY
