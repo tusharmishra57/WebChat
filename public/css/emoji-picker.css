@@ -413,16 +413,18 @@
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .emoji-picker {
-        bottom: 130px;
-        left: 20px;
-        right: 20px;
+        bottom: 120px; /* Closer to input on tablets */
+        left: 15px;
+        right: 15px;
         width: auto;
         transform: none;
         max-height: 400px;
+        border-radius: var(--radius-md); /* Slightly smaller radius on mobile */
     }
     
     .emoji-picker:not(.hidden) {
-        transform: none;
+        transform: translateY(0) scale(1);
+        opacity: 1;
     }
     
     .emoji-grid {
@@ -434,20 +436,85 @@
         font-size: 28px;
         padding: 10px;
     }
+    
+    /* Adjust when reply is active on tablets */
+    .reply-active .emoji-picker {
+        bottom: 180px;
+    }
 }
 
 @media (max-width: 480px) {
     .emoji-picker {
-        bottom: 130px;
-        left: 10px;
-        right: 10px;
-        max-height: 350px;
+        bottom: 110px; /* Even closer to input on phones */
+        left: max(8px, env(safe-area-inset-left)); /* Respect safe area */
+        right: max(8px, env(safe-area-inset-right)); /* Respect safe area */
+        max-height: 320px; /* Smaller height to ensure it fits */
+        border-radius: var(--radius-sm);
     }
     
     .emoji-grid {
         grid-template-columns: repeat(5, 1fr);
-        height: 220px;
+        height: 200px; /* Reduced height for better fit */
+        gap: 8px; /* Smaller gap on mobile */
     }
+    
+    .emoji-item {
+        font-size: 24px; /* Slightly smaller emojis */
+        padding: 8px;
+    }
+    
+    /* Adjust when reply is active on phones */
+    .reply-active .emoji-picker {
+        bottom: 170px;
+    }
+    
+    /* Ensure picker doesn't go off-screen on very small devices */
+    .emoji-picker-header {
+        padding: var(--space-sm);
+    }
+    
+    .emoji-search-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    /* Ensure picker fits within viewport height */
+    .emoji-picker {
+        max-height: calc(100vh - 140px); /* Leave space for input and some margin */
+        max-height: calc(100dvh - 140px); /* Use dynamic viewport height if supported */
+    }
+    
+    /* Handle keyboard appearance on mobile */
+    @supports (height: 100dvh) {
+        .emoji-picker {
+            max-height: calc(100dvh - 140px);
+        }
+    }
+}
+
+/* Extra small devices (very small phones) */
+@media (max-width: 360px) {
+    .emoji-picker {
+        bottom: 100px;
+        left: max(5px, env(safe-area-inset-left));
+        right: max(5px, env(safe-area-inset-right));
+        max-height: 280px;
+    }
+    
+    .emoji-grid {
+        grid-template-columns: repeat(4, 1fr);
+        height: 180px;
+        gap: 6px;
+    }
+    
+    .emoji-item {
+        font-size: 22px;
+        padding: 6px;
+    }
+    
+    .reply-active .emoji-picker {
+        bottom: 160px;
+    }
+}
     
     .emoji-item {
         font-size: 24px;
@@ -647,8 +714,21 @@
     50% { transform: translateX(-50%) translateY(-2px) scale(1); }
 }
 
-/* Disable float animation on mobile for performance */
+/* Mobile float animation (no horizontal centering) */
+@keyframes floatMobile {
+    0%, 100% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-2px) scale(1); }
+}
+
+/* Use mobile-specific float animation */
 @media (max-width: 768px) {
+    .emoji-picker:not(.hidden) {
+        animation: floatMobile 3s ease-in-out infinite;
+    }
+}
+
+/* Disable animation on very small devices for performance */
+@media (max-width: 360px) {
     .emoji-picker:not(.hidden) {
         animation: none;
     }

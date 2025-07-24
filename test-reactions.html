@@ -60,6 +60,7 @@
         
         <div class="test-buttons">
             <button class="test-button" onclick="runQuickTest()">🚀 Quick Reaction Test</button>
+            <button class="test-button" onclick="emojiPickerTest()">📱 Emoji Picker Test</button>
             <button class="test-button" onclick="debugReactions()">🐛 Debug Production</button>
             <button class="test-button" onclick="doubleClickTest()">🖱️ Double-Click Test</button>
             <button class="test-button" onclick="replyAlignmentTest()">💬 Reply Alignment</button>
@@ -149,6 +150,21 @@ Console output will appear here...
                     log('✅ Toggle test called successfully');
                 } else {
                     log('❌ testReactionToggle function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function emojiPickerTest() {
+            log('📱 Running emoji picker alignment test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.testEmojiPickerAlignment) {
+                    appWindow.testEmojiPickerAlignment();
+                    log('✅ Emoji picker test called - check if picker is fully visible on your screen size!');
+                } else {
+                    log('❌ testEmojiPickerAlignment function not found in iframe');
                 }
             } catch (error) {
                 log('❌ Error: ' + error.message);
@@ -250,7 +266,7 @@ Console output will appear here...
             setTimeout(() => {
                 log('🔍 Checking available test functions...');
                 const appWindow = iframe.contentWindow;
-                const testFunctions = ['quickReactionTest', 'debugReactions', 'testDoubleClick', 'testReplyAlignment', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
+                const testFunctions = ['quickReactionTest', 'testEmojiPickerAlignment', 'debugReactions', 'testDoubleClick', 'testReplyAlignment', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
                 testFunctions.forEach(func => {
                     if (appWindow[func]) {
                         log(`✅ ${func} is available`);

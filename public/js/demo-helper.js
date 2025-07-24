@@ -703,6 +703,86 @@ window.debugReactions = function() {
     console.log('🐛 Debug complete - check the logs above for issues');
 };
 
+// Test emoji picker alignment on different screen sizes
+window.testEmojiPickerAlignment = function() {
+    console.log('📱 EMOJI PICKER ALIGNMENT TEST - Testing positioning on different screen sizes...');
+    
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPicker = document.getElementById('emoji-picker');
+    
+    if (!emojiBtn || !emojiPicker) {
+        console.log('❌ Emoji button or picker not found');
+        return;
+    }
+    
+    console.log('📊 Current viewport:', {
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
+    
+    // Get emoji button position
+    const btnRect = emojiBtn.getBoundingClientRect();
+    console.log('🔘 Emoji button position:', {
+        left: btnRect.left,
+        right: btnRect.right,
+        bottom: btnRect.bottom,
+        width: btnRect.width
+    });
+    
+    // Show the emoji picker
+    console.log('📱 Opening emoji picker...');
+    emojiPicker.classList.remove('hidden');
+    
+    setTimeout(() => {
+        const pickerRect = emojiPicker.getBoundingClientRect();
+        console.log('📋 Emoji picker position:', {
+            left: pickerRect.left,
+            right: pickerRect.right,
+            top: pickerRect.top,
+            bottom: pickerRect.bottom,
+            width: pickerRect.width,
+            height: pickerRect.height
+        });
+        
+        // Check if picker is fully visible
+        const isFullyVisible = 
+            pickerRect.left >= 0 && 
+            pickerRect.right <= window.innerWidth &&
+            pickerRect.top >= 0 && 
+            pickerRect.bottom <= window.innerHeight;
+        
+        console.log('👁️ Picker fully visible:', isFullyVisible);
+        
+        if (!isFullyVisible) {
+            console.log('⚠️ VISIBILITY ISSUES:');
+            if (pickerRect.left < 0) console.log('  - Picker extends beyond left edge');
+            if (pickerRect.right > window.innerWidth) console.log('  - Picker extends beyond right edge');
+            if (pickerRect.top < 0) console.log('  - Picker extends beyond top edge');
+            if (pickerRect.bottom > window.innerHeight) console.log('  - Picker extends beyond bottom edge');
+        } else {
+            console.log('✅ Picker is fully visible within viewport');
+        }
+        
+        // Check responsive breakpoints
+        const screenSize = window.innerWidth <= 360 ? 'extra-small' :
+                          window.innerWidth <= 480 ? 'small' :
+                          window.innerWidth <= 768 ? 'tablet' : 'desktop';
+        
+        console.log('📱 Screen size category:', screenSize);
+        
+        // Test different screen sizes simulation
+        console.log('🔄 Testing different screen sizes...');
+        console.log('💡 Try resizing your browser window and run this test again');
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            emojiPicker.classList.add('hidden');
+            console.log('📱 Test complete - emoji picker hidden');
+        }, 3000);
+        
+    }, 300); // Wait for animation
+};
+
 // Add this to the console for easy testing
 console.log('🎯 Demo helper loaded!');
 console.log('Use window.addDemoReactions() to add sample reactions.');
@@ -720,3 +800,4 @@ console.log('🔄 OVERLAP TEST: Run window.overlapTest() to see overlapping reac
 console.log('💬 REPLY TEST: Run window.testReplyAlignment() to test reply message alignment!');
 console.log('🖱️ DOUBLE-CLICK TEST: Run window.testDoubleClick() to test new double-click options!');
 console.log('🐛 PRODUCTION DEBUG: Run window.debugReactions() to debug production issues!');
+console.log('📱 EMOJI PICKER TEST: Run window.testEmojiPickerAlignment() to test mobile alignment!');
