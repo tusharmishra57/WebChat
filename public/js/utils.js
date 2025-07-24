@@ -511,8 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set up unhandled promise rejection handling
     window.addEventListener('unhandledrejection', (event) => {
         console.error('Unhandled promise rejection:', event.reason);
-        // Only show toast for critical errors
-        if (event.reason && !event.reason.message?.includes('showToast')) {
+        // Only show toast for critical errors and not during logout
+        if (event.reason && !event.reason.message?.includes('showToast') && 
+            (!window.chatApp || !window.chatApp.isLoggingOut)) {
             showToast('Connection issue. Please refresh if needed.', 'error');
         }
     });

@@ -6,6 +6,7 @@ class ChatApp {
         this.currentChatUser = null;
         this.isTyping = false;
         this.typingTimeout = null;
+        this.isLoggingOut = false;
         
         this.init();
     }
@@ -109,6 +110,12 @@ class ChatApp {
         this.socket.on('disconnect', (reason) => {
             console.log('❌ Disconnected from server:', reason);
             console.log('Disconnect reason details:', reason);
+            
+            // Don't show errors or update UI if we're logging out
+            if (this.isLoggingOut) {
+                return;
+            }
+            
             this.updateConnectionStatus('disconnected');
             
             // Only show toast for unexpected disconnections
@@ -119,18 +126,36 @@ class ChatApp {
 
         this.socket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
+            
+            // Don't show errors if we're logging out
+            if (this.isLoggingOut) {
+                return;
+            }
+            
             this.updateConnectionStatus('disconnected');
             showToast('Connection failed. Please refresh the page.', 'error');
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
             console.log('✅ Reconnected to server after', attemptNumber, 'attempts');
+            
+            // Don't update UI if we're logging out
+            if (this.isLoggingOut) {
+                return;
+            }
+            
             this.updateConnectionStatus('connected');
             showToast('Reconnected successfully!', 'success');
         });
 
         this.socket.on('reconnect_error', (error) => {
             console.error('❌ Reconnection failed:', error);
+            
+            // Don't update UI if we're logging out
+            if (this.isLoggingOut) {
+                return;
+            }
+            
             this.updateConnectionStatus('disconnected');
         });
 
@@ -1066,80 +1091,27 @@ class ChatApp {
         }
     }
 
-    async logout() {
-        console.log('🚪 Starting logout process...');
+    logout() {
+        // Set logout flag to prevent any UI updates
+        this.isLoggingOut = true;
         
-        try {
-            const token = localStorage.getItem('chatapp_token');
-            if (token) {
-                console.log('📡 Notifying server of logout...');
-                await fetch('/api/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('❌ Error during server logout:', error);
-        }
-
-        // Clear local storage
-        console.log('🧹 Clearing local storage...');
-        localStorage.removeItem('chatapp_token');
-        localStorage.removeItem('chatapp_user');
-
-        // Disconnect socket
+        // Clear local storage immediately  
+        localStorage.clear(); // Clear everything to be sure
+        
+        // Disconnect socket immediately without any listeners
         if (this.socket) {
-            console.log('🔌 Disconnecting socket...');
+            this.socket.removeAllListeners();
             this.socket.disconnect();
             this.socket = null;
         }
 
-        // Close all modals and reset UI state
-        console.log('🎭 Closing modals and resetting UI...');
-        this.hideAllModals();
-        if (this.isEmojiPickerOpen) {
-            this.hideEmojiPicker();
-        }
-
-        // Clear any ongoing timers
-        if (this.typingTimeout) {
-            clearTimeout(this.typingTimeout);
-            this.typingTimeout = null;
-        }
-
-        // Reset all application state
-        console.log('🔄 Resetting application state...');
-        this.currentUser = null;
-        this.currentChatUser = null;
-        this.isTyping = false;
-        this.isEmojiPickerOpen = false;
-
-        // Clear message containers
-        const messagesContainer = document.getElementById('messages-container');
-        if (messagesContainer) {
-            messagesContainer.innerHTML = '';
-        }
-
-        // Reset input fields
-        const messageInput = document.getElementById('message-input');
-        if (messageInput) {
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-        }
-
-        // Hide new messages indicator
-        this.hideNewMessagesIndicator();
-
-        // Automatically refresh the page to show login page
-        console.log('🔄 Refreshing page to show login...');
+        // Immediately refresh the page - don't wait for anything
         window.location.reload();
     }
 
     // Handle automatic logout when authentication fails
     handleAuthError() {
-        console.log('🔒 Authentication error detected, logging out automatically...');
+        // Don't show messages, just logout and refresh
         this.logout();
     }
 
