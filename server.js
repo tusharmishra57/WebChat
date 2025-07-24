@@ -114,7 +114,14 @@ const messageSchema = new mongoose.Schema({
         default: 'sent' 
     },
     deliveredAt: { type: Date },
-    seenAt: { type: Date }
+    seenAt: { type: Date },
+    // Reply functionality
+    replyTo: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Message',
+        default: null 
+    },
+    isReply: { type: Boolean, default: false }
 });
 
 const Message = mongoose.model('Message', messageSchema);
@@ -309,6 +316,13 @@ app.get('/api/messages/self', authenticateToken, async (req, res) => {
             sender: req.user.userId,
             receiver: req.user.userId
         }).populate('sender', 'username profilePicture')
+          .populate({
+              path: 'replyTo',
+              populate: {
+                  path: 'sender',
+                  select: 'username profilePicture'
+              }
+          })
           .sort({ timestamp: 1 });
 
         res.json(messages);
@@ -335,6 +349,13 @@ app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
             ]
         }).populate('sender', 'username profilePicture')
           .populate('receiver', 'username profilePicture')
+          .populate({
+              path: 'replyTo',
+              populate: {
+                  path: 'sender',
+                  select: 'username profilePicture'
+              }
+          })
           .sort({ timestamp: 1 });
 
         res.json(messages);
@@ -588,7 +609,7 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const { receiverId, content, messageType = 'text', emotionData, imageUrl } = messageData;
+            const { receiverId, content, messageType = 'text', emotionData, imageUrl, replyTo } = messageData;
             
             // Validate message
             if (!content && !imageUrl && !emotionData) {
@@ -606,7 +627,9 @@ io.on('connection', (socket) => {
                 imageUrl,
                 timestamp: new Date(),
                 isPrivate: receiverId !== senderData.userId,
-                status: 'sent' // Initially sent
+                status: 'sent', // Initially sent
+                replyTo: replyTo || null,
+                isReply: !!replyTo
             });
 
             await message.save();
@@ -614,6 +637,17 @@ io.on('connection', (socket) => {
             
             if (receiverId !== senderData.userId) {
                 await message.populate('receiver', 'username profilePicture');
+            }
+
+            // Populate reply data if this is a reply
+            if (message.replyTo) {
+                await message.populate({
+                    path: 'replyTo',
+                    populate: {
+                        path: 'sender',
+                        select: 'username profilePicture'
+                    }
+                });
             }
 
             console.log('💾 Message saved with ID:', message._id);

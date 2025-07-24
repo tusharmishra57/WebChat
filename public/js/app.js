@@ -7,6 +7,8 @@ class ChatApp {
         this.isTyping = false;
         this.typingTimeout = null;
         this.isLoggingOut = false;
+        this.replyToMessage = null;
+        this.messageCache = new Map(); // Store messages for reply functionality
         
         this.init();
     }
@@ -303,6 +305,10 @@ class ChatApp {
                 if (this.isEmojiPickerOpen) {
                     this.hideEmojiPicker();
                 }
+                // Cancel reply if active
+                if (this.replyToMessage) {
+                    this.cancelReply();
+                }
             }
             
             // Ctrl/Cmd + Down Arrow or End key to scroll to bottom
@@ -533,6 +539,12 @@ class ChatApp {
         if (!container) return;
 
         container.innerHTML = '';
+        this.messageCache.clear();
+        
+        // Cancel any active reply
+        if (this.replyToMessage) {
+            this.cancelReply();
+        }
 
         messages.forEach(message => {
             this.addMessageToChat(message);
@@ -549,7 +561,7 @@ class ChatApp {
         if (!container) return;
 
         const messageElement = document.createElement('div');
-        messageElement.className = `message ${message.sender._id === this.currentUser.id ? 'own' : ''}`;
+        messageElement.className = `message ${message.sender._id === this.currentUser.id ? 'own' : ''} ${message.isReply ? 'is-reply' : ''}`;
 
         let messageContent = '';
 
@@ -564,6 +576,7 @@ class ChatApp {
             
             messageContent = `
                 <div class="message-content emotion-message">
+                    ${this.getReplyContextHTML(message)}
                     <div class="emotion-display">
                         <span class="emotion-text ${emotionClass}">
                             ${message.emotionData.emotion} ${emotionEmoji}
@@ -574,10 +587,12 @@ class ChatApp {
                         ${this.getMessageStatusHTML(message)}
                     </div>
                 </div>
+                ${this.getReplyButtonHTML(message)}
             `;
         } else if (message.messageType === 'mood_image') {
             messageContent = `
                 <div class="message-content">
+                    ${this.getReplyContextHTML(message)}
                     <img src="${message.imageUrl}" alt="Mood Image" class="mood-image" onload="if(window.chatApp) window.chatApp.scrollToBottom();">
                     <p class="message-text">${message.content}</p>
                     <div class="message-time-status">
@@ -585,6 +600,7 @@ class ChatApp {
                         ${this.getMessageStatusHTML(message)}
                     </div>
                 </div>
+                ${this.getReplyButtonHTML(message)}
             `;
         } else {
             // Check if message contains only emojis
@@ -592,12 +608,14 @@ class ChatApp {
             
             messageContent = `
                 <div class="message-content">
+                    ${this.getReplyContextHTML(message)}
                     <p class="message-text ${emojiOnlyClass}">${escapeHtml(message.content)}</p>
                     <div class="message-time-status">
                         <div class="message-time">${formatTime(message.timestamp)}</div>
                         ${this.getMessageStatusHTML(message)}
                     </div>
                 </div>
+                ${this.getReplyButtonHTML(message)}
             `;
         }
 
@@ -610,6 +628,9 @@ class ChatApp {
         
         // Set message ID for status updates
         messageElement.setAttribute('data-message-id', message._id);
+        
+        // Store message in cache for reply functionality
+        this.messageCache.set(message._id, message);
         
         // Auto-scroll to bottom after adding message with slight delay to ensure DOM is updated
         setTimeout(() => {
@@ -674,6 +695,47 @@ class ChatApp {
                 <span class="status-icon">${statusIcon}</span>
                 <span class="status-text">${statusText}</span>
             </div>
+        `;
+    }
+
+    // Generate reply context HTML
+    getReplyContextHTML(message) {
+        if (!message.isReply || !message.replyTo) {
+            return '';
+        }
+
+        const replyToMessage = message.replyTo;
+        let replyContent = '';
+
+        if (replyToMessage.messageType === 'emotion') {
+            replyContent = `${replyToMessage.emotionData.emotion} emotion`;
+        } else if (replyToMessage.messageType === 'mood_image') {
+            replyContent = 'Mood image';
+        } else {
+            replyContent = replyToMessage.content;
+        }
+
+        // Truncate long content
+        if (replyContent.length > 60) {
+            replyContent = replyContent.substring(0, 60) + '...';
+        }
+
+        return `
+            <div class="reply-context">
+                <div class="reply-header">
+                    <span>↳ Replying to ${replyToMessage.sender.username}</span>
+                </div>
+                <div class="reply-content">${escapeHtml(replyContent)}</div>
+            </div>
+        `;
+    }
+
+    // Generate reply button HTML
+    getReplyButtonHTML(message) {
+        return `
+            <button class="reply-button" onclick="chatApp.startReply('${message._id}')" title="Reply to this message">
+                ↩
+            </button>
         `;
     }
 
@@ -790,6 +852,85 @@ class ChatApp {
         });
     }
 
+    // Start reply to a message
+    startReply(messageId) {
+        // Find the message in the current chat
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        // Get message data (we'll need to store this when creating messages)
+        const messageData = this.getMessageDataById(messageId);
+        if (!messageData) {
+            console.error('Message data not found for reply');
+            return;
+        }
+
+        this.replyToMessage = messageData;
+        this.showReplyPreview();
+        
+        // Focus on message input
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.focus();
+        }
+    }
+
+    // Get message data by ID from cache
+    getMessageDataById(messageId) {
+        return this.messageCache.get(messageId) || null;
+    }
+
+    // Show reply preview above message input
+    showReplyPreview() {
+        if (!this.replyToMessage) return;
+
+        const chatPage = document.getElementById('chat-page');
+        const existingPreview = document.getElementById('reply-preview');
+        
+        // Remove existing preview
+        if (existingPreview) {
+            existingPreview.remove();
+        }
+
+        const replyPreview = document.createElement('div');
+        replyPreview.id = 'reply-preview';
+        replyPreview.className = 'reply-input-container';
+
+        let replyContent = this.replyToMessage.content;
+        if (replyContent.length > 60) {
+            replyContent = replyContent.substring(0, 60) + '...';
+        }
+
+        replyPreview.innerHTML = `
+            <div class="reply-preview">
+                <div class="reply-preview-content">
+                    <div class="reply-preview-header">
+                        Replying to ${this.replyToMessage.sender.username}
+                    </div>
+                    <div class="reply-preview-text">${escapeHtml(replyContent)}</div>
+                </div>
+                <button class="cancel-reply" onclick="chatApp.cancelReply()" title="Cancel reply">
+                    ✕
+                </button>
+            </div>
+        `;
+
+        // Insert before message input area
+        const messageInputContainer = document.querySelector('.message-input-container');
+        if (messageInputContainer) {
+            messageInputContainer.parentNode.insertBefore(replyPreview, messageInputContainer);
+        }
+    }
+
+    // Cancel reply
+    cancelReply() {
+        this.replyToMessage = null;
+        const replyPreview = document.getElementById('reply-preview');
+        if (replyPreview) {
+            replyPreview.remove();
+        }
+    }
+
     sendMessage() {
         const input = document.getElementById('message-input');
         const content = input.value.trim();
@@ -806,6 +947,11 @@ class ChatApp {
             content,
             messageType: 'text'
         };
+
+        // Add reply data if replying to a message
+        if (this.replyToMessage) {
+            messageData.replyTo = this.replyToMessage._id;
+        }
 
         try {
             // Add receiver ID to message data - handle both id and _id formats
@@ -828,6 +974,11 @@ class ChatApp {
             // Clear input and stop typing
             input.value = '';
             this.stopTyping();
+
+            // Clear reply if there was one
+            if (this.replyToMessage) {
+                this.cancelReply();
+            }
             
         } catch (error) {
             console.error('❌ Send message error:', error);

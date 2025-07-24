@@ -232,6 +232,11 @@ class ChatController {
         // Add receiver ID and send using unified handler - handle both id and _id formats
         const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
         messageData.receiverId = receiverId;
+
+        // Add reply data if replying to a message
+        if (window.chatApp.replyToMessage) {
+            messageData.replyTo = window.chatApp.replyToMessage._id;
+        }
         
         console.log('📤 Sending emotion message to:', window.chatApp.currentChatUser.username, 'ID:', receiverId);
         
@@ -242,6 +247,11 @@ class ChatController {
                 showToast('Emotion sent!', 'success');
             }
         });
+
+        // Clear reply if there was one
+        if (window.chatApp.replyToMessage) {
+            window.chatApp.cancelReply();
+        }
 
         this.hideEmotionModal();
     }
@@ -506,6 +516,11 @@ class ChatController {
         // Add receiver ID and send using unified handler - handle both id and _id formats
         const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
         messageData.receiverId = receiverId;
+
+        // Add reply data if replying to a message
+        if (window.chatApp.replyToMessage) {
+            messageData.replyTo = window.chatApp.replyToMessage._id;
+        }
         
         console.log('📤 Sending mood message to:', window.chatApp.currentChatUser.username, 'ID:', receiverId);
         
@@ -516,6 +531,11 @@ class ChatController {
                 showToast('Mood image sent!', 'success');
             }
         });
+
+        // Clear reply if there was one
+        if (window.chatApp.replyToMessage) {
+            window.chatApp.cancelReply();
+        }
 
         this.hideMoodModal();
     }
