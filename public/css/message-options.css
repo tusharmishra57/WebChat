@@ -1,0 +1,509 @@
+/* 🎯 MESSAGE OPTIONS STYLES */
+
+/* Message Container Enhancement */
+.message {
+    position: relative;
+    transition: all 0.2s ease;
+    margin-bottom: 16px; /* Extra space for overlapping reactions */
+}
+
+/* Remove the light colored box on hover */
+.message:hover {
+    /* No visual changes on hover - just show the options button */
+}
+
+/* Show options button on message hover */
+.message:hover .message-options-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Hover effect on the button itself */
+.message-options-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Reply starting animation */
+.message.reply-starting {
+    animation: replyPulse 0.6s ease;
+}
+
+@keyframes replyPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* Message Options Button */
+.message-options-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden; /* Hidden by default, show on hover */
+    transition: all 0.2s ease;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Position options button based on message type - overlapping slightly */
+.message:not(.own) .message-options-btn {
+    right: -6px; /* Right side for received messages - closer to message */
+}
+
+.message.own .message-options-btn {
+    left: -6px; /* Left side for sent messages - closer to message */
+}
+
+.message-options-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    animation: optionsSlideIn 0.3s ease;
+}
+
+@keyframes optionsSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.message-options-btn:hover {
+    background: var(--primary-gradient);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+.message-options-btn i {
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.message-options-btn:hover i {
+    color: white;
+}
+
+/* Message Options Menu */
+.message-options-menu {
+    position: absolute;
+    top: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    z-index: 1000;
+    min-width: 180px;
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Position menu based on message type */
+.message:not(.own) .message-options-menu {
+    right: -220px; /* Right side for received messages */
+}
+
+.message.own .message-options-menu {
+    left: -220px; /* Left side for sent messages */
+}
+
+.message-options-menu.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+.message-options-menu.hidden {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+    visibility: hidden;
+}
+
+/* Option Buttons */
+.option-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.option-btn:last-child {
+    border-bottom: none;
+}
+
+.option-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.option-btn i {
+    width: 16px;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.option-btn:hover i {
+    color: var(--accent-color);
+}
+
+/* Specific option button styles */
+.delete-btn:hover {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+}
+
+.delete-btn:hover i {
+    color: #f44336;
+}
+
+.react-btn:hover {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.react-btn:hover i {
+    color: #ffc107;
+}
+
+.reply-btn:hover {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+}
+
+.reply-btn:hover i {
+    color: #4caf50;
+}
+
+/* Message Reactions Container */
+.message-reactions {
+    position: absolute;
+    bottom: -12px; /* Overlap the message bubble more */
+    left: -4px; /* Left corner for all messages */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    animation: fadeInReactions 0.3s ease;
+    min-height: 0; /* Allow container to be empty */
+    z-index: 10; /* Ensure reactions appear above message */
+    pointer-events: auto; /* Allow clicking on reactions */
+}
+
+.message.own .message-reactions {
+    left: -4px; /* Left corner for own messages too */
+}
+
+@keyframes fadeInReactions {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Individual Reaction Items */
+.reaction-item {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%; /* Perfect circle */
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px; /* Small emoji size */
+    animation: reactionSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 15; /* Higher z-index to appear above message bubble */
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25); /* Stronger shadow for better visibility */
+}
+
+@keyframes reactionSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.reaction-item:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.15);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.reaction-item.own-reaction {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.reaction-item.own-reaction:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4c93 100%);
+    transform: scale(1.15);
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.4);
+}
+
+.reaction-emoji {
+    font-size: 12px;
+    line-height: 1;
+    display: block;
+}
+
+.reaction-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 12px;
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.reaction-item.own-reaction .reaction-count {
+    color: white;
+}
+
+/* Reaction Picker */
+.reaction-picker {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+    animation: popIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.8) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1) translateY(0);
+    }
+}
+
+.reaction-picker-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quick-reactions {
+    display: flex;
+    gap: 6px;
+}
+
+.quick-reaction-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s ease;
+}
+
+.quick-reaction-btn:hover {
+    background: var(--primary-gradient);
+    transform: scale(1.2);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.more-reactions-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.more-reactions-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .message-options-btn {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .message:not(.own) .message-options-btn {
+        right: 2px;
+    }
+    
+    .message.own .message-options-btn {
+        left: 2px;
+    }
+    
+    .message-options-menu {
+        min-width: 160px;
+    }
+    
+    .message:not(.own) .message-options-menu {
+        right: -180px;
+    }
+    
+    .message.own .message-options-menu {
+        left: -180px;
+    }
+    
+    .message-reactions {
+        left: -2px; /* Left corner on tablets */
+        bottom: -10px; /* Slightly less overlap on tablets */
+    }
+    
+    .message.own .message-reactions {
+        left: -2px; /* Left corner for own messages on tablets */
+    }
+    
+    .reaction-picker {
+        position: fixed;
+        top: auto;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .quick-reaction-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .message-options-btn {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .message:not(.own) .message-options-btn {
+        right: -28px;
+    }
+    
+    .message.own .message-options-btn {
+        left: -28px;
+    }
+    
+    .message-reactions {
+        left: -2px; /* Left corner on mobile */
+        bottom: -8px; /* Good overlap on mobile */
+    }
+    
+    .message.own .message-reactions {
+        left: -2px; /* Left corner for own messages on mobile */
+    }
+    
+    .option-btn {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .quick-reactions {
+        gap: 4px;
+    }
+    
+    .quick-reaction-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+    
+    .reaction-item {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+    
+    .reaction-emoji {
+        font-size: 10px;
+    }
+}
+
+/* Enhanced hover effects for touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .message-options-btn.visible {
+        opacity: 0.8;
+    }
+    
+    .message:hover {
+        background: transparent;
+    }
+    
+    .reaction-item:hover {
+        transform: none;
+    }
+    
+    .quick-reaction-btn:hover {
+        transform: scale(1.1);
+    }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .message-options-menu {
+        background: rgba(0, 0, 0, 0.8);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .reaction-picker {
+        background: rgba(0, 0, 0, 0.8);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}

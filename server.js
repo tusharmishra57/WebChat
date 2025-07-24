@@ -121,7 +121,13 @@ const messageSchema = new mongoose.Schema({
         ref: 'Message',
         default: null 
     },
-    isReply: { type: Boolean, default: false }
+    isReply: { type: Boolean, default: false },
+    // Reactions functionality
+    reactions: {
+        type: Map,
+        of: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        default: {}
+    }
 });
 
 const Message = mongoose.model('Message', messageSchema);
@@ -361,6 +367,75 @@ app.get('/api/messages/:receiverId', authenticateToken, async (req, res) => {
         res.json(messages);
     } catch (error) {
         console.error('Error in /api/messages/:receiverId:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+
+// Add/Remove reaction to message
+app.post('/api/messages/:messageId/react', authenticateToken, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { emoji, toggle } = req.body;
+        const userId = req.user.userId;
+        
+        const message = await Message.findById(messageId);
+        if (!message) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+        
+        // Initialize reactions if not exists
+        if (!message.reactions) {
+            message.reactions = {};
+        }
+        
+        // Initialize emoji array if not exists
+        if (!message.reactions[emoji]) {
+            message.reactions[emoji] = [];
+        }
+        
+        const userIndex = message.reactions[emoji].indexOf(userId);
+        
+        if (toggle && userIndex > -1) {
+            // Remove reaction if user already reacted and toggle is true
+            message.reactions[emoji].splice(userIndex, 1);
+            
+            // Remove emoji if no users have reacted
+            if (message.reactions[emoji].length === 0) {
+                delete message.reactions[emoji];
+            }
+        } else if (userIndex === -1) {
+            // Add reaction if user hasn't reacted
+            message.reactions[emoji].push(userId);
+        }
+        
+        // Mark reactions as modified and save
+        message.markModified('reactions');
+        await message.save();
+        
+        // Populate the saved message for response
+        const populatedMessage = await Message.findById(messageId)
+            .populate('sender', 'username profilePicture')
+            .populate({
+                path: 'replyTo',
+                populate: {
+                    path: 'sender',
+                    select: 'username profilePicture'
+                }
+            });
+        
+        // Emit to all connected clients
+        io.emit('messageReaction', { 
+            messageId, 
+            reactions: populatedMessage.reactions,
+            userId,
+            emoji,
+            action: toggle && userIndex > -1 ? 'remove' : 'add'
+        });
+        
+        res.json(populatedMessage);
+    } catch (error) {
+        console.error('Error adding reaction:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

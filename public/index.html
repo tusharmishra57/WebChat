@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChatApp - Connect & Express</title>
     <link rel="stylesheet" href="/css/style-new.css">
+    <link rel="stylesheet" href="/css/emoji-picker.css">
+    <link rel="stylesheet" href="/css/message-options.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -196,15 +198,38 @@
                 </button>
             </div>
             
-            <!-- Emoji Picker -->
+            <!-- 🎨 MODERN EMOJI PICKER -->
             <div id="emoji-picker" class="emoji-picker hidden">
+                <!-- Header with Search -->
                 <div class="emoji-picker-header">
                     <div class="emoji-header-top">
-                        <span class="emoji-title">Emojis</span>
+                        <div class="emoji-title-container">
+                            <span class="emoji-title">😊 Emojis</span>
+                            <span class="emoji-subtitle" id="category-name">Recently Used</span>
+                        </div>
                         <button id="close-emoji-picker" class="close-emoji-btn">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="emoji-search-container">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input 
+                                type="text" 
+                                id="emoji-search" 
+                                class="emoji-search-input" 
+                                placeholder="Search emojis..." 
+                                autocomplete="off"
+                            >
+                            <button id="clear-search" class="clear-search-btn hidden">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories -->
                     <div class="emoji-categories">
                         <button class="emoji-category active" data-category="recent" title="Recently Used">
                             <span class="category-icon">🕒</span>
@@ -213,7 +238,7 @@
                             <span class="category-icon">😀</span>
                         </button>
                         <button class="emoji-category" data-category="animals" title="Animals & Nature">
-                            <span class="category-icon">🐶</span>
+                            <span class="category-icon">🐻</span>
                         </button>
                         <button class="emoji-category" data-category="food" title="Food & Drink">
                             <span class="category-icon">🍕</span>
@@ -222,19 +247,54 @@
                             <span class="category-icon">⚽</span>
                         </button>
                         <button class="emoji-category" data-category="travel" title="Travel & Places">
-                            <span class="category-icon">🏠</span>
+                            <span class="category-icon">🌍</span>
                         </button>
                         <button class="emoji-category" data-category="objects" title="Objects">
                             <span class="category-icon">💡</span>
                         </button>
-                        <button class="emoji-category" data-category="symbols" title="Symbols">
+                        <button class="emoji-category" data-category="symbols" title="Symbols & Flags">
                             <span class="category-icon">❤️</span>
                         </button>
                     </div>
                 </div>
+                
+                <!-- Content Area -->
                 <div class="emoji-content">
-                    <div class="emoji-grid" id="emoji-grid">
-                        <!-- Emojis will be populated here -->
+                    <!-- Search Results -->
+                    <div class="search-results hidden" id="search-results">
+                        <div class="search-results-header">
+                            <span class="results-count" id="results-count">0 results</span>
+                        </div>
+                        <div class="emoji-grid" id="search-grid">
+                            <!-- Search results will appear here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Regular Category Content -->
+                    <div class="category-content" id="category-content">
+                        <div class="emoji-grid" id="emoji-grid">
+                            <!-- Category emojis will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- No Results -->
+                    <div class="no-results hidden" id="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <div class="no-results-text">No emojis found</div>
+                        <div class="no-results-subtitle">Try a different search term</div>
+                    </div>
+                </div>
+                
+                <!-- Skin Tone Picker (for supported emojis) -->
+                <div class="skin-tone-picker hidden" id="skin-tone-picker">
+                    <div class="skin-tone-header">Choose skin tone</div>
+                    <div class="skin-tone-options">
+                        <button class="skin-tone-btn active" data-tone="default" title="Default">👋</button>
+                        <button class="skin-tone-btn" data-tone="light" title="Light">👋🏻</button>
+                        <button class="skin-tone-btn" data-tone="medium-light" title="Medium Light">👋🏼</button>
+                        <button class="skin-tone-btn" data-tone="medium" title="Medium">👋🏽</button>
+                        <button class="skin-tone-btn" data-tone="medium-dark" title="Medium Dark">👋🏾</button>
+                        <button class="skin-tone-btn" data-tone="dark" title="Dark">👋🏿</button>
                     </div>
                 </div>
             </div>
@@ -372,6 +432,8 @@
     <script src="/js/camera.js?v=4.0"></script>
     <script src="/js/auth.js?v=4.0"></script>
     <script src="/js/chat.js?v=4.0"></script>
+    <script src="/js/emoji-picker.js?v=4.0"></script>
+    <script src="/js/demo-helper.js?v=4.0"></script>
     <script src="/js/app.js?v=4.0"></script>
 </body>
 </html>

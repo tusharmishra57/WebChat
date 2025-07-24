@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Reactions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .iframe-container {
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Reaction System Test</h1>
+        <p>This page will help us test the reaction functionality.</p>
+        
+        <div class="test-buttons">
+            <button class="test-button" onclick="runQuickTest()">🚀 Quick Reaction Test</button>
+            <button class="test-button" onclick="overlapTest()">🔄 Overlap Test</button>
+            <button class="test-button" onclick="visualTest()">👀 Visual Test</button>
+            <button class="test-button" onclick="simpleToggleTest()">⚡ Simple Toggle</button>
+            <button class="test-button" onclick="testToggle()">🔄 Test Toggle</button>
+            <button class="test-button" onclick="checkMessages()">🔍 Inspect Messages</button>
+            <button class="test-button" onclick="demoLogin()">👤 Demo Login</button>
+            <button class="test-button" onclick="clearConsole()">🧹 Clear Console</button>
+        </div>
+        
+        <div id="results" class="test-results">
+Console output will appear here...
+        </div>
+        
+        <div class="iframe-container">
+            <iframe src="http://localhost:3000" id="appFrame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const iframe = document.getElementById('appFrame');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            resultsDiv.textContent += `[${timestamp}] ${message}\n`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearConsole() {
+            resultsDiv.textContent = 'Console cleared...\n';
+        }
+        
+        function runQuickTest() {
+            log('🚀 Starting quick reaction test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.quickReactionTest) {
+                    appWindow.quickReactionTest();
+                    log('✅ Test function called successfully');
+                } else {
+                    log('❌ quickReactionTest function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function checkMessages() {
+            log('🔍 Checking messages...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.inspectMessages) {
+                    appWindow.inspectMessages();
+                    log('✅ Inspect function called successfully');
+                } else {
+                    log('❌ inspectMessages function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function demoLogin() {
+            log('👤 Creating demo login...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.demoLogin) {
+                    appWindow.demoLogin();
+                    log('✅ Demo login called successfully');
+                } else {
+                    log('❌ demoLogin function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function testToggle() {
+            log('🔄 Testing reaction toggle...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.testReactionToggle) {
+                    appWindow.testReactionToggle();
+                    log('✅ Toggle test called successfully');
+                } else {
+                    log('❌ testReactionToggle function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function overlapTest() {
+            log('🔄 Running overlap test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.overlapTest) {
+                    appWindow.overlapTest();
+                    log('✅ Overlap test called - check if reaction overlaps message bubble!');
+                } else {
+                    log('❌ overlapTest function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function visualTest() {
+            log('👀 Running visual reaction test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.visualReactionTest) {
+                    appWindow.visualReactionTest();
+                    log('✅ Visual test called successfully - watch the reactions appear!');
+                } else {
+                    log('❌ visualReactionTest function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function simpleToggleTest() {
+            log('⚡ Running simple toggle test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.simpleToggleTest) {
+                    appWindow.simpleToggleTest();
+                    log('✅ Simple toggle test called successfully');
+                } else {
+                    log('❌ simpleToggleTest function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        iframe.onload = function() {
+            log('✅ Application loaded in iframe');
+            setTimeout(() => {
+                log('🔍 Checking available test functions...');
+                const appWindow = iframe.contentWindow;
+                const testFunctions = ['quickReactionTest', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
+                testFunctions.forEach(func => {
+                    if (appWindow[func]) {
+                        log(`✅ ${func} is available`);
+                    } else {
+                        log(`❌ ${func} is not available`);
+                    }
+                });
+            }, 2000);
+        };
+
+        log('🎯 Test page loaded. Waiting for application to load...');
+    </script>
+</body>
+</html>

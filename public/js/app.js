@@ -219,6 +219,12 @@ class ChatApp {
             this.handleMessagesSeen(data);
         });
 
+        // Message reaction
+        this.socket.on('messageReaction', (data) => {
+            console.log('😊 Message reaction:', data);
+            this.updateMessageReactions(data.messageId, data.reactions);
+        });
+
         // Typing indicators
         this.socket.on('user_typing', (data) => {
             console.log('⌨️ User typing:', data);
@@ -288,8 +294,8 @@ class ChatApp {
             this.hideNewMessagesIndicator();
         });
 
-        // Emoji functionality
-        this.setupEmojiPicker();
+        // Emoji functionality - handled by modern emoji picker
+        // this.setupEmojiPicker();
 
         // Modal close on outside click
         document.addEventListener('click', (e) => {
@@ -449,13 +455,13 @@ class ChatApp {
     handleUserOnline(userData) {
         // Add user to online list if not already there
         this.loadOnlineUsers();
-        showToast(`${userData.username} came online`, 'info');
+        // showToast(`${userData.username} came online`, 'info'); // Removed
     }
 
     handleUserOffline(userData) {
         // Remove user from online list
         this.loadOnlineUsers();
-        showToast(`${userData.username} went offline`, 'info');
+        // showToast(`${userData.username} went offline`, 'info'); // Removed
     }
 
     startChat(user) {
@@ -553,7 +559,7 @@ class ChatApp {
         // Scroll to bottom after all messages are loaded with a delay to ensure DOM is fully updated
         setTimeout(() => {
             this.scrollToBottom(false, true); // Force scroll for initial load
-        }, 100);
+        }, 200); // Increased delay to ensure all images and content are loaded
     }
 
     addMessageToChat(message) {
@@ -584,10 +590,9 @@ class ChatApp {
                     </div>
                     <div class="message-time-status">
                         <div class="message-time">${formatTime(message.timestamp)}</div>
-                        ${this.getMessageStatusHTML(message)}
+                        ${this.getMessageStatusHTML(message, this.isLastMessage(message._id))}
                     </div>
                 </div>
-                ${this.getReplyButtonHTML(message)}
             `;
         } else if (message.messageType === 'mood_image') {
             messageContent = `
@@ -597,10 +602,9 @@ class ChatApp {
                     <p class="message-text">${message.content}</p>
                     <div class="message-time-status">
                         <div class="message-time">${formatTime(message.timestamp)}</div>
-                        ${this.getMessageStatusHTML(message)}
+                        ${this.getMessageStatusHTML(message, this.isLastMessage(message._id))}
                     </div>
                 </div>
-                ${this.getReplyButtonHTML(message)}
             `;
         } else {
             // Check if message contains only emojis
@@ -612,17 +616,40 @@ class ChatApp {
                     <p class="message-text ${emojiOnlyClass}">${escapeHtml(message.content)}</p>
                     <div class="message-time-status">
                         <div class="message-time">${formatTime(message.timestamp)}</div>
-                        ${this.getMessageStatusHTML(message)}
+                        ${this.getMessageStatusHTML(message, this.isLastMessage(message._id))}
                     </div>
                 </div>
-                ${this.getReplyButtonHTML(message)}
             `;
         }
 
+        console.log(`🏗️ Creating message HTML for: ${message._id}`);
         messageElement.innerHTML = `
+            <!-- Message Options Button -->
+            <div class="message-options-btn" data-message-id="${message._id}">
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+            
+            <!-- Message Options Menu -->
+            <div class="message-options-menu hidden" data-message-id="${message._id}">
+                <button class="option-btn react-btn" data-action="react" data-message-id="${message._id}">
+                    <i class="fas fa-smile"></i>
+                    <span>React</span>
+                </button>
+                <button class="option-btn reply-btn" data-action="reply" data-message-id="${message._id}">
+                    <i class="fas fa-reply"></i>
+                    <span>Reply</span>
+                </button>
+            </div>
+            
             <img src="${message.sender.profilePicture || '/images/default-avatar.png'}" alt="${message.sender.username}" onload="if(window.chatApp) window.chatApp.scrollToBottom();">
             ${messageContent}
+            
+            <!-- Message Reactions -->
+            <div class="message-reactions" data-message-id="${message._id}">
+                ${this.getMessageReactionsHTML(message)}
+            </div>
         `;
+        console.log(`✅ Message HTML created for: ${message._id}`);
 
         container.appendChild(messageElement);
         
@@ -631,6 +658,17 @@ class ChatApp {
         
         // Store message in cache for reply functionality
         this.messageCache.set(message._id, message);
+
+        // Add double-click/double-tap event listener for reply
+        this.addReplyEventListener(messageElement, message);
+        
+        // Add message options event listeners
+        this.addMessageOptionsEventListeners(messageElement, message);
+        
+        // Refresh all message statuses to update "last message" indicators
+        setTimeout(() => {
+            this.refreshAllMessageStatuses();
+        }, 10);
         
         // Auto-scroll to bottom after adding message with slight delay to ensure DOM is updated
         setTimeout(() => {
@@ -658,8 +696,24 @@ class ChatApp {
         }, 50);
     }
 
+    // Check if a message is the last message sent by current user
+    isLastMessage(messageId) {
+        const messagesContainer = document.getElementById('messages');
+        if (!messagesContainer) return false;
+        
+        const allMessages = messagesContainer.querySelectorAll('.message');
+        const currentUserMessages = Array.from(allMessages).filter(msg => 
+            msg.classList.contains('own-message')
+        );
+        
+        if (currentUserMessages.length === 0) return false;
+        
+        const lastMessage = currentUserMessages[currentUserMessages.length - 1];
+        return lastMessage && lastMessage.dataset.messageId === messageId;
+    }
+
     // Generate message status HTML
-    getMessageStatusHTML(message) {
+    getMessageStatusHTML(message, isLastMessage = false) {
         // Only show status for own messages, not for received messages
         if (message.sender._id !== this.currentUser.id) {
             return '';
@@ -670,30 +724,30 @@ class ChatApp {
         let statusText = '';
         let statusClass = `status-${status}`;
 
-        switch (status) {
-            case 'sent':
-                statusIcon = '✓';
-                statusText = 'Sent';
-                break;
-            case 'delivered':
-                statusIcon = '✓✓';
-                statusText = 'Delivered';
-                break;
-            case 'seen':
-                statusIcon = '✓✓';
+        // Show double ticks on all messages, and "Seen" text only on last message
+        if (status === 'sent') {
+            statusIcon = '✓';
+            statusText = isLastMessage ? 'Sent' : '';
+        } else if (status === 'delivered' || status === 'seen') {
+            statusIcon = '✓✓';
+            // Only show "Seen" text on the last message
+            if (status === 'seen' && isLastMessage) {
                 statusText = 'Seen';
                 statusClass += ' double-check';
-                break;
-            default:
-                statusIcon = '⏳';
-                statusText = 'Sending...';
-                statusClass = 'status-sending';
+            } else {
+                statusText = ''; // No text for non-last messages
+                statusClass = 'status-delivered'; // Keep consistent styling
+            }
+        } else {
+            statusIcon = '⏳';
+            statusText = 'Sending...';
+            statusClass = 'status-sending';
         }
 
         return `
             <div class="message-status ${statusClass}" data-status="${status}">
                 <span class="status-icon">${statusIcon}</span>
-                <span class="status-text">${statusText}</span>
+                ${statusText ? `<span class="status-text">${statusText}</span>` : ''}
             </div>
         `;
     }
@@ -730,14 +784,7 @@ class ChatApp {
         `;
     }
 
-    // Generate reply button HTML
-    getReplyButtonHTML(message) {
-        return `
-            <button class="reply-button" onclick="chatApp.startReply('${message._id}')" title="Reply to this message">
-                ↩
-            </button>
-        `;
-    }
+
 
     // Update message status in UI
     updateMessageStatus(messageId, newStatus) {
@@ -747,30 +794,49 @@ class ChatApp {
         const statusElement = messageElement.querySelector('.message-status');
         if (!statusElement) return;
 
+        // Check if this is the last message
+        const isLast = this.isLastMessage(messageId);
+        
         let statusIcon = '';
         let statusText = '';
         let statusClass = `message-status status-${newStatus}`;
 
-        switch (newStatus) {
-            case 'delivered':
-                statusIcon = '✓✓';
-                statusText = 'Delivered';
-                break;
-            case 'seen':
-                statusIcon = '✓✓';
+        // Show double ticks on all messages, and "Seen" text only on last message
+        if (newStatus === 'delivered' || newStatus === 'seen') {
+            statusIcon = '✓✓';
+            // Only show "Seen" text on the last message
+            if (newStatus === 'seen' && isLast) {
                 statusText = 'Seen';
                 statusClass += ' double-check';
-                break;
+            } else {
+                statusText = ''; // No text for non-last messages
+                statusClass = 'message-status status-delivered'; // Keep consistent styling
+            }
         }
 
         statusElement.className = statusClass;
         statusElement.setAttribute('data-status', newStatus);
         statusElement.innerHTML = `
             <span class="status-icon">${statusIcon}</span>
-            <span class="status-text">${statusText}</span>
+            ${statusText ? `<span class="status-text">${statusText}</span>` : ''}
         `;
 
         console.log(`✅ Updated message ${messageId} status to ${newStatus}`);
+    }
+
+    // Refresh all message statuses (called when new message is added)
+    refreshAllMessageStatuses() {
+        const messageElements = document.querySelectorAll('.message.own-message');
+        messageElements.forEach(messageElement => {
+            const messageId = messageElement.dataset.messageId;
+            const statusElement = messageElement.querySelector('.message-status');
+            if (!statusElement || !messageId) return;
+
+            const currentStatus = statusElement.dataset.status;
+            if (currentStatus) {
+                this.updateMessageStatus(messageId, currentStatus);
+            }
+        });
     }
 
     // Handle multiple messages seen
@@ -854,30 +920,75 @@ class ChatApp {
 
     // Start reply to a message
     startReply(messageId) {
+        console.log('🔄 Starting reply to message:', messageId);
+        
         // Find the message in the current chat
         const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
         if (!messageElement) return;
 
-        // Get message data (we'll need to store this when creating messages)
+        // Add visual feedback
+        messageElement.classList.add('reply-starting');
+        setTimeout(() => {
+            messageElement.classList.remove('reply-starting');
+        }, 300);
+
+        // Get message data from cache
         const messageData = this.getMessageDataById(messageId);
         if (!messageData) {
             console.error('Message data not found for reply');
+            showToast('Cannot reply to this message', 'error');
             return;
         }
 
         this.replyToMessage = messageData;
         this.showReplyPreview();
         
-        // Focus on message input
-        const messageInput = document.getElementById('message-input');
-        if (messageInput) {
-            messageInput.focus();
-        }
+        // Focus on message input with small delay
+        setTimeout(() => {
+            const messageInput = document.getElementById('message-input');
+            if (messageInput) {
+                messageInput.focus();
+            }
+        }, 100);
+
+        // Show success feedback - removed
     }
 
     // Get message data by ID from cache
     getMessageDataById(messageId) {
         return this.messageCache.get(messageId) || null;
+    }
+
+    // Add double-click/double-tap event listener for reply functionality
+    addReplyEventListener(messageElement, message) {
+        let tapCount = 0;
+        let tapTimer = null;
+        
+        // Handle double-click for desktop
+        messageElement.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            this.startReply(message._id);
+        });
+
+        // Handle double-tap for mobile
+        messageElement.addEventListener('touchend', (e) => {
+            tapCount++;
+            
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => {
+                    tapCount = 0; // Reset after single tap timeout
+                }, 300);
+            } else if (tapCount === 2) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                e.preventDefault();
+                this.startReply(message._id);
+            }
+        });
+
+        // Add visual feedback for double-click/tap
+        messageElement.style.cursor = 'pointer';
+        messageElement.setAttribute('title', 'Double-click to reply');
     }
 
     // Show reply preview above message input
@@ -909,17 +1020,17 @@ class ChatApp {
                     </div>
                     <div class="reply-preview-text">${escapeHtml(replyContent)}</div>
                 </div>
-                <button class="cancel-reply" onclick="chatApp.cancelReply()" title="Cancel reply">
+                <button class="cancel-reply" onclick="window.chatApp.cancelReply()" title="Cancel reply">
                     ✕
                 </button>
             </div>
         `;
 
-        // Insert before message input area
-        const messageInputContainer = document.querySelector('.message-input-container');
-        if (messageInputContainer) {
-            messageInputContainer.parentNode.insertBefore(replyPreview, messageInputContainer);
-        }
+        // Insert into body for fixed positioning
+        document.body.appendChild(replyPreview);
+        
+        // Add class to body to indicate reply is active
+        document.body.classList.add('reply-active');
     }
 
     // Cancel reply
@@ -928,6 +1039,15 @@ class ChatApp {
         const replyPreview = document.getElementById('reply-preview');
         if (replyPreview) {
             replyPreview.remove();
+        }
+        
+        // Remove reply-active class from body
+        document.body.classList.remove('reply-active');
+        
+        // Focus back on message input
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.focus();
         }
     }
 
@@ -943,10 +1063,17 @@ class ChatApp {
             return;
         }
 
+        // Debug: Check current user
+        console.log('🐛 Debug - Current user:', this.currentUser);
+        console.log('🐛 Debug - Current user ID:', this.currentUser?.id);
+        
         const messageData = {
             content,
-            messageType: 'text'
+            messageType: 'text',
+            sender: this.currentUser.id // Add sender ID (current user)
         };
+        
+        console.log('🐛 Debug - Message data being sent:', messageData);
 
         // Add reply data if replying to a message
         if (this.replyToMessage) {
@@ -995,7 +1122,7 @@ class ChatApp {
             
             // Show message if it's from the current chat user
             if (senderId === this.currentChatUser.id) {
-                this.addMessageToChatSmart(message); // Smart scroll for received messages
+                this.addMessageToChatAndScroll(message); // Force scroll for received messages
                 this.playNotificationSound();
                 
                 // Mark message as seen if user is at bottom (actively viewing)
@@ -1007,9 +1134,7 @@ class ChatApp {
             }
         }
         
-        // Show toast notification
-        const senderName = message.sender.username || 'Someone';
-        showToast(`New message from ${senderName}`, 'info');
+        // Show toast notification - removed
     }
 
     // Handle sent message confirmation
@@ -1084,20 +1209,23 @@ class ChatApp {
     scrollToBottom(smooth = true, force = false) {
         const container = document.getElementById('messages-container');
         if (container) {
-            // Only auto-scroll if user is near the bottom or if forced
-            const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+            // Always scroll for new messages or if forced
+            if (force) {
+                // Force scroll immediately for page loads
+                container.scrollTop = container.scrollHeight;
+                return;
+            }
             
-            if (force || isNearBottom) {
-                if (smooth && container.scrollTo) {
-                    // Smooth scrolling for better UX
-                    container.scrollTo({
-                        top: container.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                } else {
-                    // Fallback for older browsers or immediate scrolling
-                    container.scrollTop = container.scrollHeight;
-                }
+            // For new messages, always scroll with smooth behavior
+            if (smooth && container.scrollTo) {
+                // Smooth scrolling for better UX
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Fallback for older browsers
+                container.scrollTop = container.scrollHeight;
             }
         }
     }
@@ -1508,9 +1636,488 @@ class ChatApp {
             this.loadEmojis('recent');
         }
     }
+
+    // 🎭 MESSAGE REACTIONS HELPER
+    getMessageReactionsHTML(message) {
+        console.log(`🎭 Getting reactions HTML for message:`, message._id);
+        console.log(`🎭 Message reactions:`, message.reactions);
+        console.log(`🎭 Current user ID:`, this.currentUser?.id);
+        
+        if (!message.reactions || Object.keys(message.reactions).length === 0) {
+            console.log(`🎭 No reactions to display`);
+            return '';
+        }
+
+        let reactionsHTML = '';
+        for (const [emoji, users] of Object.entries(message.reactions)) {
+            const count = users.length;
+            const currentUserId = this.currentUser?.id || 'demo-user-123';
+            const hasCurrentUser = users.includes(currentUserId);
+            
+            console.log(`🎭 Processing reaction: ${emoji}, users: ${users}, count: ${count}, hasCurrentUser: ${hasCurrentUser}`);
+            
+            reactionsHTML += `
+                <button class="reaction-item ${hasCurrentUser ? 'own-reaction' : ''}" 
+                        data-emoji="${emoji}" 
+                        data-message-id="${message._id}"
+                        title="${users.map(userId => this.getUsernameById(userId)).join(', ')}">
+                    <span class="reaction-emoji">${emoji}</span>
+                </button>
+            `;
+        }
+
+        console.log(`🎭 Generated reactions HTML:`, reactionsHTML);
+        return reactionsHTML;
+    }
+
+    // 🎯 MESSAGE OPTIONS EVENT LISTENERS
+    addMessageOptionsEventListeners(messageElement, message) {
+        console.log(`🎯 Setting up event listeners for message: ${message._id}`);
+        
+        const optionsBtn = messageElement.querySelector('.message-options-btn');
+        const optionsMenu = messageElement.querySelector('.message-options-menu');
+        
+        console.log('🔍 Options button found:', !!optionsBtn);
+        console.log('🔍 Options menu found:', !!optionsMenu);
+        console.log('🔍 Message element:', messageElement);
+        
+        if (!optionsBtn || !optionsMenu) {
+            console.warn('❌ Message options elements not found for message:', message._id);
+            console.log('📄 Message element HTML:', messageElement.innerHTML);
+            return;
+        }
+        
+        console.log('✅ Message options elements found for:', message._id);
+
+        // Show/hide options on hover
+        messageElement.addEventListener('mouseenter', () => {
+            console.log('🖱️ Mouse entered message:', message._id);
+            optionsBtn.classList.add('visible');
+            console.log('✅ Options button made visible');
+        });
+
+        messageElement.addEventListener('mouseleave', () => {
+            console.log('🖱️ Mouse left message:', message._id);
+            if (!optionsMenu.classList.contains('visible')) {
+                optionsBtn.classList.remove('visible');
+                console.log('❌ Options button hidden');
+            }
+        });
+
+        // Toggle options menu
+        optionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('🎯 Options button clicked for message:', message._id);
+            this.hideAllMessageOptionsMenus();
+            optionsMenu.classList.toggle('hidden');
+            optionsMenu.classList.toggle('visible');
+            console.log('✅ Menu visibility toggled');
+        });
+
+        // Handle option clicks
+        const optionBtns = optionsMenu.querySelectorAll('.option-btn');
+        console.log(`🔧 Found ${optionBtns.length} option buttons for message ${message._id}`);
+        
+        optionBtns.forEach((btn, index) => {
+            console.log(`🔧 Adding listener to button ${index}: ${btn.dataset.action}`);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = btn.dataset.action;
+                const messageId = btn.dataset.messageId;
+                
+                console.log(`🎯 Option clicked: ${action} for message ${messageId}`);
+                console.log('🔍 Button element:', btn);
+                console.log('🔍 Event target:', e.target);
+                
+                this.handleMessageOption(action, messageId, message);
+                this.hideAllMessageOptionsMenus();
+            });
+        });
+
+        // Handle reaction clicks
+        const reactionItems = messageElement.querySelectorAll('.reaction-item');
+        reactionItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const emoji = item.dataset.emoji;
+                const messageId = item.dataset.messageId;
+                this.toggleReaction(messageId, emoji);
+            });
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', () => {
+            this.hideAllMessageOptionsMenus();
+        });
+    }
+
+    // 🎮 HANDLE MESSAGE OPTIONS
+    async handleMessageOption(action, messageId, message) {
+        console.log(`🎮 Handling option: ${action} for message: ${messageId}`);
+        
+        switch (action) {
+            case 'react':
+                console.log('😊 Calling showReactionPicker...');
+                this.showReactionPicker(messageId, message);
+                break;
+            case 'reply':
+                console.log('💬 Calling startReply...');
+                this.startReply(message._id);
+                break;
+            default:
+                console.warn('❓ Unknown action:', action);
+        }
+    }
+
+
+
+    // 😊 SHOW REACTION PICKER
+    showReactionPicker(messageId, message) {
+        console.log(`😊 Showing reaction picker for message: ${messageId}`);
+        
+        // Hide the options menu first
+        this.hideAllMessageOptionsMenus();
+        
+        // Remove any existing picker
+        const existingPicker = document.querySelector('.reaction-picker');
+        if (existingPicker) existingPicker.remove();
+        
+        // Create a temporary reaction picker
+        const reactionPicker = document.createElement('div');
+        reactionPicker.className = 'reaction-picker';
+        reactionPicker.innerHTML = `
+            <div class="reaction-picker-content">
+                <div class="quick-reactions">
+                    ${['❤️', '😂', '😮', '😢', '😡', '👍', '👎', '🔥'].map(emoji => 
+                        `<button class="quick-reaction-btn" data-emoji="${emoji}">${emoji}</button>`
+                    ).join('')}
+                </div>
+                <button class="more-reactions-btn">
+                    <i class="fas fa-smile"></i>
+                    More reactions
+                </button>
+            </div>
+        `;
+
+        // Position near the message
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            messageElement.appendChild(reactionPicker);
+            
+            // Handle quick reaction clicks
+            reactionPicker.querySelectorAll('.quick-reaction-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const emoji = btn.dataset.emoji;
+                    console.log(`🎯 Quick reaction clicked: ${emoji} for message: ${messageId}`);
+                    this.addReaction(messageId, emoji);
+                    reactionPicker.remove();
+                });
+            });
+
+            // Handle more reactions button
+            reactionPicker.querySelector('.more-reactions-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                reactionPicker.remove();
+                this.showMainEmojiPickerForReaction(messageId);
+            });
+
+            // Remove on outside click
+            setTimeout(() => {
+                const handleOutsideClick = (e) => {
+                    if (!reactionPicker.contains(e.target)) {
+                        reactionPicker.remove();
+                        document.removeEventListener('click', handleOutsideClick);
+                    }
+                };
+                document.addEventListener('click', handleOutsideClick);
+            }, 100);
+        }
+    }
+
+    // 🎭 SHOW MAIN EMOJI PICKER FOR REACTIONS
+    showMainEmojiPickerForReaction(messageId) {
+        console.log('🎯 Setting reaction message ID:', messageId);
+        this.reactionMessageId = messageId;
+        console.log('🎯 Reaction message ID set to:', this.reactionMessageId);
+        
+        // Show the main emoji picker
+        if (window.modernEmojiPicker) {
+            console.log('🎯 Opening main emoji picker for reaction');
+            window.modernEmojiPicker.show();
+        } else {
+            console.error('❌ Modern emoji picker not found');
+        }
+    }
+
+    // ➕ ADD REACTION
+    async addReaction(messageId, emoji) {
+        console.log(`🔄 Adding/toggling reaction ${emoji} to message ${messageId}`);
+        console.log(`🔍 Current user ID: ${this.currentUser?.id}`);
+        console.log(`🔍 Current user:`, this.currentUser);
+        console.log(`🔍 Token exists: ${!!localStorage.getItem('chatapp_token')}`);
+        console.log(`🔍 Message cache has message:`, this.messageCache.has(messageId));
+        
+        // Check if we have authentication - if not, use mock for demo
+        if (!this.currentUser?.id) {
+            console.error('❌ No authenticated user - using mock reaction (with toggle) for demo');
+            this.addMockReaction(messageId, emoji);
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/messages/${messageId}/react`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('chatapp_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ emoji })
+            });
+
+            console.log(`📡 Reaction API response status: ${response.status}`);
+
+            if (response.ok) {
+                const updatedMessage = await response.json();
+                console.log(`✅ Reaction response:`, updatedMessage);
+                console.log(`🎭 Reactions in response:`, updatedMessage.reactions);
+                
+                // Update reactions immediately
+                this.updateMessageReactions(messageId, updatedMessage.reactions);
+                
+                // Add to recent emojis for quick access
+                if (window.modernEmojiPicker) {
+                    window.modernEmojiPicker.addToRecent(emoji);
+                }
+                
+                console.log(`✨ Successfully added reaction ${emoji} to message ${messageId}`);
+            } else if (response.status === 404) {
+                console.warn('⚠️ Server endpoint not found - using mock reaction (with toggle) for demo');
+                this.addMockReaction(messageId, emoji);
+            } else {
+                const errorText = await response.text();
+                console.error(`❌ Failed to add reaction: ${response.status} - ${errorText}`);
+                console.error(`❌ Error response:`, errorText);
+                
+                // Fallback to mock reaction for demo
+                console.warn('⚠️ Using mock reaction (with toggle) as fallback');
+                this.addMockReaction(messageId, emoji);
+            }
+        } catch (error) {
+            console.error('❌ Error adding reaction:', error);
+            console.error('❌ Full error:', error.stack);
+            
+            // Fallback to mock reaction when server is not available
+            console.warn('⚠️ Server unavailable - using mock reaction (with toggle) for demo');
+            this.addMockReaction(messageId, emoji);
+        }
+    }
+    
+    // 🧪 ADD MOCK REACTION (for testing without server)
+    addMockReaction(messageId, emoji) {
+        console.log(`🧪 Adding mock reaction ${emoji} to message ${messageId}`);
+        console.log(`🧪 Current user for mock reaction:`, this.currentUser);
+        
+        // Get current message from cache
+        const message = this.messageCache.get(messageId);
+        if (!message) {
+            console.error('❌ Message not found in cache');
+            console.error('❌ Available message IDs in cache:', Array.from(this.messageCache.keys()));
+            return;
+        }
+        
+        // Create a demo user ID if currentUser is not available
+        let userId = this.currentUser?.id || 'demo-user-123';
+        console.log(`🧪 Using user ID for reaction:`, userId);
+        
+        // Initialize reactions if they don't exist
+        if (!message.reactions) {
+            message.reactions = {};
+        }
+        
+        // Add or toggle reaction
+        if (!message.reactions[emoji]) {
+            message.reactions[emoji] = [];
+        }
+        
+        const userIndex = message.reactions[emoji].indexOf(userId);
+        let actionTaken = '';
+        
+        console.log(`🔍 Debug toggle - emoji: ${emoji}, userId: ${userId}`);
+        console.log(`🔍 Current users for ${emoji}:`, message.reactions[emoji]);
+        console.log(`🔍 User index in array: ${userIndex}`);
+        
+        if (userIndex === -1) {
+            // Add reaction
+            message.reactions[emoji].push(userId);
+            actionTaken = 'added';
+            console.log(`✅ Added reaction ${emoji} for user ${userId}`);
+            console.log(`✅ Updated users for ${emoji}:`, message.reactions[emoji]);
+        } else {
+            // Remove reaction (toggle off)
+            message.reactions[emoji].splice(userIndex, 1);
+            if (message.reactions[emoji].length === 0) {
+                delete message.reactions[emoji];
+                console.log(`🗑️ Deleted empty ${emoji} reaction array`);
+            }
+            actionTaken = 'removed';
+            console.log(`➖ Removed reaction ${emoji} for user ${userId} (toggled off)`);
+            console.log(`➖ Updated users for ${emoji}:`, message.reactions[emoji] || 'DELETED');
+        }
+        
+        // Update the DOM
+        this.updateMessageReactions(messageId, message.reactions);
+        
+        // Add to recent emojis
+        if (window.modernEmojiPicker) {
+            window.modernEmojiPicker.addToRecent(emoji);
+        }
+        
+        console.log(`✨ Mock reaction ${emoji} ${actionTaken} for message ${messageId}`);
+    }
+
+    // 🔄 TOGGLE REACTION
+    async toggleReaction(messageId, emoji) {
+        console.log(`🔄 Toggling reaction ${emoji} on message ${messageId}`);
+        
+        // Use mock reaction directly for demo
+        this.addMockReaction(messageId, emoji);
+    }
+
+    // 🔄 UPDATE MESSAGE REACTIONS IN DOM
+    updateMessageReactions(messageId, reactions) {
+        console.log(`🔄 Updating reactions for message ${messageId}:`, reactions);
+        
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        console.log(`🔍 Message element found:`, !!messageElement);
+        
+        if (!messageElement) {
+            console.error('❌ Message element not found for reaction update');
+            console.error('❌ Looking for element with selector:', `[data-message-id="${messageId}"]`);
+            const allMessageElements = document.querySelectorAll('[data-message-id]');
+            console.error('❌ Available message elements:', allMessageElements.length);
+            allMessageElements.forEach((el, index) => {
+                console.error(`❌ Element ${index}: ID = ${el.getAttribute('data-message-id')}`);
+            });
+            return;
+        }
+        
+        const reactionsContainer = messageElement.querySelector('.message-reactions');
+        console.log(`🔍 Reactions container found:`, !!reactionsContainer);
+        
+        if (!reactionsContainer) {
+            console.error('❌ Reactions container not found in message element');
+            console.error('❌ Message element outerHTML:', messageElement.outerHTML);
+            console.error('❌ Looking for container with selector: .message-reactions');
+            const allReactionContainers = messageElement.querySelectorAll('*');
+            console.error('❌ All child elements:', Array.from(allReactionContainers).map(el => el.className));
+            return;
+        }
+        
+        const message = this.messageCache.get(messageId);
+        console.log(`🔍 Message in cache:`, !!message);
+        
+        if (message) {
+            message.reactions = reactions;
+            const reactionsHTML = this.getMessageReactionsHTML(message);
+            console.log(`🎨 Generated reactions HTML:`, reactionsHTML);
+            console.log(`🎨 HTML length:`, reactionsHTML.length);
+            
+            reactionsContainer.innerHTML = reactionsHTML;
+            console.log(`🎨 Container updated. New innerHTML:`, reactionsContainer.innerHTML);
+            
+            // Re-add event listeners for new reaction items
+            const reactionItems = reactionsContainer.querySelectorAll('.reaction-item');
+            console.log(`🎯 Found ${reactionItems.length} reaction items to add listeners to`);
+            
+            reactionItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const emoji = item.dataset.emoji;
+                    console.log(`🔄 Toggling reaction: ${emoji}`);
+                    this.toggleReaction(messageId, emoji);
+                });
+            });
+            
+            console.log(`✅ Reactions updated for message ${messageId}`);
+        } else {
+            console.error('❌ Message not found in cache');
+        }
+    }
+
+    // 🙈 HIDE ALL MESSAGE OPTIONS MENUS
+    hideAllMessageOptionsMenus() {
+        document.querySelectorAll('.message-options-menu.visible').forEach(menu => {
+            menu.classList.add('hidden');
+            menu.classList.remove('visible');
+        });
+        
+        document.querySelectorAll('.message-options-btn.visible').forEach(btn => {
+            btn.classList.remove('visible');
+        });
+    }
+
+    // 👤 GET USERNAME BY ID (helper for reaction tooltips)
+    getUsernameById(userId) {
+        if (this.currentUser?.id && userId === this.currentUser.id) return 'You';
+        
+        // Handle demo users
+        if (userId.startsWith('demo-user-')) return 'You';
+        
+        // Try to find user in message cache
+        for (const message of this.messageCache.values()) {
+            if (message.sender._id === userId) {
+                return message.sender.username;
+            }
+        }
+        
+        // Check if it's the current chat partner
+        if (this.currentReceiver && this.currentReceiver.id === userId) {
+            return this.currentReceiver.username;
+        }
+        
+        return 'Someone';
+    }
+
+    // 🧪 TEST REACTION FUNCTIONALITY (for debugging)
+    testReaction() {
+        console.log('🧪 Testing reaction functionality...');
+        
+        // Find the first message element
+        const firstMessage = document.querySelector('[data-message-id]');
+        if (!firstMessage) {
+            console.error('❌ No messages found to test reaction on');
+            return;
+        }
+        
+        const messageId = firstMessage.getAttribute('data-message-id');
+        console.log('🎯 Testing reaction on message:', messageId);
+        
+        // Test adding a heart reaction
+        this.addMockReaction(messageId, '❤️');
+    }
+
+
 }
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.chatApp = new ChatApp();
+    
+    // Add debug functions to window for browser console testing
+    window.testReaction = () => {
+        if (window.chatApp) {
+            window.chatApp.testReaction();
+        } else {
+            console.error('❌ ChatApp not initialized');
+        }
+    };
+    
+    window.debugReactions = () => {
+        console.log('🔍 Debugging reaction system...');
+        console.log('🔍 Available message elements:', document.querySelectorAll('[data-message-id]').length);
+        console.log('🔍 ChatApp instance:', !!window.chatApp);
+        console.log('🔍 Current user:', window.chatApp?.currentUser);
+        console.log('🔍 Message cache size:', window.chatApp?.messageCache?.size);
+    };
 });

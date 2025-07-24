@@ -746,12 +746,14 @@ body::after {
 /* Messages Container */
 .messages-container {
     flex: 1;
-    padding: var(--space-lg);
+    padding: var(--space-lg) var(--space-sm); /* Reduced horizontal padding */
+    padding-bottom: 140px; /* Add space for fixed message input (120px height + 20px extra) */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
     scroll-behavior: smooth;
+    transition: padding-bottom 0.3s ease;
 }
 
 .message {
@@ -759,6 +761,7 @@ body::after {
     gap: var(--space-sm);
     animation: messageSlideIn 0.3s ease;
     max-width: 85%;
+    position: relative; /* Required for absolute positioned reply button */
 }
 
 .message.own {
@@ -871,9 +874,20 @@ body::after {
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--glass-border);
     padding: var(--space-lg);
-    position: sticky;
+    position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999; /* Below reply bar but above messages */
 }
+
+/* Adjust messages and input when reply is active */
+.reply-active .messages-container {
+    padding-bottom: 210px; /* Add extra space when reply is active (125px reply + 60px reply height + 25px gap) */
+    transition: padding-bottom 0.3s ease;
+}
+
+/* Message input stays at bottom always - no movement needed */
 
 .message-input-wrapper {
     display: flex;
@@ -1343,35 +1357,39 @@ body::after {
     }
 }
 
-/* Reply Functionality */
-.reply-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Reply Functionality - Double click/tap to reply */
+.message {
     cursor: pointer;
-    opacity: 0;
-    transition: var(--transition-fast);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    font-size: 0.8rem;
-    color: var(--text-color);
+    user-select: none; /* Prevent text selection on double click */
+    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    padding: 4px;
+    margin: 2px 0;
 }
 
-.message:hover .reply-button {
-    opacity: 1;
+.message:active {
+    transform: scale(0.98);
 }
 
-.reply-button:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: scale(1.1);
+.message-content {
+    user-select: text; /* Allow text selection in content */
+    pointer-events: none; /* Prevent interference with message click */
+}
+
+.message-text {
+    pointer-events: all; /* Re-enable text selection */
+}
+
+/* Visual feedback for reply action */
+@keyframes replyPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.message.reply-starting {
+    animation: replyPulse 0.3s ease;
+    background: rgba(0, 123, 255, 0.1);
 }
 
 .reply-context {
@@ -1429,7 +1447,32 @@ body::after {
     display: flex;
     align-items: flex-start;
     gap: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    position: fixed;
+    bottom: 125px; /* Just above the message input container with 5px gap */
+    left: 0;
+    right: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+    padding: var(--space-sm);
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    transform: translateY(0);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .reply-preview-content {
@@ -1513,6 +1556,11 @@ body::after {
 
 /* Responsive Design - Mobile First */
 @media (max-width: 480px) {
+    .messages-container {
+        padding: var(--space-md) var(--space-xs); /* Even less horizontal padding on mobile */
+        padding-bottom: 120px; /* Adjust for mobile message input height */
+    }
+    
     .chat-actions {
         gap: var(--space-xs);
     }
@@ -1536,6 +1584,21 @@ body::after {
     .chat-action-btn i {
         font-size: 1.1rem;
     }
+    
+    /* Mobile styles for fixed reply bar */
+    .reply-preview {
+        bottom: 125px; /* Same as desktop with 5px gap */
+        left: var(--space-xs);
+        right: var(--space-xs);
+        padding: var(--space-xs);
+    }
+    
+    .reply-active .messages-container {
+        padding-bottom: 185px; /* Add extra space when reply is active (mobile) */
+        transition: padding-bottom 0.3s ease;
+    }
+    
+    /* Message input stays at bottom always on mobile too */
 }
 
 @media (min-width: 480px) {

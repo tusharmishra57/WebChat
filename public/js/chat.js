@@ -203,15 +203,7 @@ class ChatController {
         // Store emotion data for sending
         this.currentEmotion = emotionData;
         
-        // 🎉 Enhanced success message with emoji
-        let successMessage = '😐 Neutral emotion detected! You look calm and balanced!';
-        if (emotionData.emotion === 'Happy') {
-            successMessage = '😊 Happy emotion detected! You look cheerful!';
-        } else if (emotionData.emotion === 'Angry') {
-            successMessage = '😡 Angry emotion detected! You look intense!';
-        }
-            
-        showToast(successMessage, 'success');
+        // 🎉 Enhanced success message with emoji - removed notification
     }
 
     sendEmotionMessage() {
@@ -223,11 +215,18 @@ class ChatController {
             return;
         }
 
+        // Debug: Check current user
+        console.log('🐛 Debug - Current user (emotion):', window.chatApp.currentUser);
+        console.log('🐛 Debug - Current user ID (emotion):', window.chatApp.currentUser?.id);
+        
         const messageData = {
             content: `Feeling ${this.currentEmotion.emotion}`,
             messageType: 'emotion',
-            emotionData: this.currentEmotion
+            emotionData: this.currentEmotion,
+            sender: window.chatApp.currentUser.id // Add sender ID
         };
+        
+        console.log('🐛 Debug - Emotion message data:', messageData);
 
         // Add receiver ID and send using unified handler - handle both id and _id formats
         const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
@@ -244,7 +243,7 @@ class ChatController {
             if (response && !response.success) {
                 showToast('Failed to send emotion: ' + response.error, 'error');
             } else {
-                showToast('Emotion sent!', 'success');
+                // showToast('Emotion sent!', 'success'); - removed
             }
         });
 
@@ -357,13 +356,13 @@ class ChatController {
             try {
                 // Show loading state
                 this.showProcessingState();
-                showToast('🎨 Applying MOOD effect...', 'info');
+                // showToast('🎨 Applying MOOD effect...', 'info'); - removed
                 
                 // Apply MOOD filter using Oyyi API
                 const filteredImageUrl = await this.applyMoodFilter(blob);
                 
                 this.displayMoodResult(filteredImageUrl);
-                showToast('✅ MOOD effect applied!', 'success');
+                // showToast('✅ MOOD effect applied!', 'success'); - removed
             } catch (error) {
                 console.error('Error applying MOOD filter:', error);
                 showToast('❌ Failed to apply MOOD effect. Please try again.', 'error');
@@ -376,7 +375,7 @@ class ChatController {
     async applyMoodFilter(imageBlob) {
         try {
             console.log('🎨 Applying MOOD filter using Oyyi API...');
-            showToast('🎨 Processing MOOD effect...', 'info');
+            // showToast('🎨 Processing MOOD effect...', 'info'); - removed
 
             const formData = new FormData();
             formData.append('image', imageBlob, 'mood-image.jpg');  // Input as JPG, output as PNG
@@ -398,7 +397,7 @@ class ChatController {
 
             if (result.filteredImage) {
                 console.log('✅ MOOD effect applied successfully using Oyyi API');
-                showToast(`✅ ${result.message}`, 'success');
+                // showToast(`✅ ${result.message}`, 'success'); - removed
                 return result.filteredImage;
             } else {
                 throw new Error('No filtered image received from MOOD API');
@@ -507,11 +506,18 @@ class ChatController {
             return;
         }
 
+        // Debug: Check current user
+        console.log('🐛 Debug - Current user (mood):', window.chatApp.currentUser);
+        console.log('🐛 Debug - Current user ID (mood):', window.chatApp.currentUser?.id);
+        
         const messageData = {
             content: 'Shared a mood image',
             messageType: 'mood_image',
-            imageUrl: this.currentMoodImage
+            imageUrl: this.currentMoodImage,
+            sender: window.chatApp.currentUser.id // Add sender ID
         };
+        
+        console.log('🐛 Debug - Mood message data:', messageData);
 
         // Add receiver ID and send using unified handler - handle both id and _id formats
         const receiverId = window.chatApp.currentChatUser.id || window.chatApp.currentChatUser._id;
@@ -528,7 +534,7 @@ class ChatController {
             if (response && !response.success) {
                 showToast('Failed to send mood image: ' + response.error, 'error');
             } else {
-                showToast('Mood image sent!', 'success');
+                // showToast('Mood image sent!', 'success'); - removed
             }
         });
 
