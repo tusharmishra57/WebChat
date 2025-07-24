@@ -659,8 +659,8 @@ class ChatApp {
         // Store message in cache for reply functionality
         this.messageCache.set(message._id, message);
 
-        // Add double-click/double-tap event listener for reply
-        this.addReplyEventListener(messageElement, message);
+        // Add double-click/double-tap event listener for options menu
+        this.addDoubleClickListener(messageElement, message);
         
         // Add message options event listeners
         this.addMessageOptionsEventListeners(messageElement, message);
@@ -959,15 +959,15 @@ class ChatApp {
         return this.messageCache.get(messageId) || null;
     }
 
-    // Add double-click/double-tap event listener for reply functionality
-    addReplyEventListener(messageElement, message) {
+    // Add double-click/double-tap event listener for options menu
+    addDoubleClickListener(messageElement, message) {
         let tapCount = 0;
         let tapTimer = null;
         
         // Handle double-click for desktop
         messageElement.addEventListener('dblclick', (e) => {
             e.preventDefault();
-            this.startReply(message._id);
+            this.showMessageOptions(messageElement, message);
         });
 
         // Handle double-tap for mobile
@@ -982,13 +982,46 @@ class ChatApp {
                 clearTimeout(tapTimer);
                 tapCount = 0;
                 e.preventDefault();
-                this.startReply(message._id);
+                this.showMessageOptions(messageElement, message);
             }
         });
 
         // Add visual feedback for double-click/tap
         messageElement.style.cursor = 'pointer';
-        messageElement.setAttribute('title', 'Double-click to reply');
+        messageElement.setAttribute('title', 'Double-click for options');
+    }
+
+    // Show message options menu (called on double-click)
+    showMessageOptions(messageElement, message) {
+        console.log('🎯 Showing message options for:', message._id);
+        
+        const optionsBtn = messageElement.querySelector('.message-options-btn');
+        const optionsMenu = messageElement.querySelector('.message-options-menu');
+        
+        if (!optionsBtn || !optionsMenu) {
+            console.warn('❌ Message options elements not found for message:', message._id);
+            return;
+        }
+        
+        // Hide all other open menus first
+        this.hideAllMessageOptionsMenus();
+        
+        // Show the options button and menu
+        optionsBtn.classList.add('visible');
+        optionsMenu.classList.remove('hidden');
+        optionsMenu.classList.add('visible');
+        
+        console.log('✅ Message options shown for:', message._id);
+        
+        // Auto-hide after 5 seconds if no interaction
+        setTimeout(() => {
+            if (optionsMenu.classList.contains('visible')) {
+                optionsBtn.classList.remove('visible');
+                optionsMenu.classList.remove('visible');
+                optionsMenu.classList.add('hidden');
+                console.log('⏰ Auto-hidden options for:', message._id);
+            }
+        }, 5000);
     }
 
     // Show reply preview above message input
@@ -1689,20 +1722,7 @@ class ChatApp {
         
         console.log('✅ Message options elements found for:', message._id);
 
-        // Show/hide options on hover
-        messageElement.addEventListener('mouseenter', () => {
-            console.log('🖱️ Mouse entered message:', message._id);
-            optionsBtn.classList.add('visible');
-            console.log('✅ Options button made visible');
-        });
-
-        messageElement.addEventListener('mouseleave', () => {
-            console.log('🖱️ Mouse left message:', message._id);
-            if (!optionsMenu.classList.contains('visible')) {
-                optionsBtn.classList.remove('visible');
-                console.log('❌ Options button hidden');
-            }
-        });
+        // Options are now shown only via double-click, not hover
 
         // Toggle options menu
         optionsBtn.addEventListener('click', (e) => {

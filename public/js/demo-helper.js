@@ -443,6 +443,154 @@ window.overlapTest = function() {
     }, 200);
 };
 
+// Test reply message alignment
+window.testReplyAlignment = function() {
+    console.log('💬 REPLY ALIGNMENT TEST - Testing if reply messages align with other sent messages...');
+    
+    // Ensure demo login
+    if (!window.chatApp?.currentUser) {
+        console.log('👤 Demo login needed...');
+        window.demoLogin();
+    }
+    
+    // Find first message to reply to
+    const messages = document.querySelectorAll('.message[data-message-id]');
+    if (messages.length === 0) {
+        console.error('❌ No messages found to reply to');
+        return;
+    }
+    
+    const messageElement = messages[0];
+    const messageId = messageElement.getAttribute('data-message-id');
+    
+    console.log('🎯 Starting reply to message:', messageId);
+    
+    // Simulate starting a reply
+    if (window.chatApp.startReply) {
+        window.chatApp.startReply(messageId);
+        
+        setTimeout(() => {
+            console.log('📝 Reply started. Now sending a test reply message...');
+            
+            // Simulate sending a reply message
+            const testReplyMessage = {
+                _id: 'test-reply-' + Date.now(),
+                content: 'This is a test reply message',
+                sender: window.chatApp.currentUser,
+                timestamp: new Date(),
+                isReply: true,
+                replyTo: {
+                    _id: messageId,
+                    content: 'Original message',
+                    sender: { username: 'TestUser' }
+                }
+            };
+            
+            // Add the reply message
+            window.chatApp.addMessageToChat(testReplyMessage);
+            
+            setTimeout(() => {
+                // Check alignment
+                const replyMessage = document.querySelector('.message.is-reply.own');
+                const regularOwnMessages = document.querySelectorAll('.message.own:not(.is-reply)');
+                
+                if (replyMessage && regularOwnMessages.length > 0) {
+                    const replyRect = replyMessage.getBoundingClientRect();
+                    const regularRect = regularOwnMessages[regularOwnMessages.length - 1].getBoundingClientRect();
+                    
+                    console.log('📊 Reply message position:', replyRect.right);
+                    console.log('📊 Regular own message position:', regularRect.right);
+                    
+                    const alignmentDiff = Math.abs(replyRect.right - regularRect.right);
+                    
+                    if (alignmentDiff < 10) { // Allow 10px tolerance
+                        console.log('🎉 SUCCESS! Reply message is properly aligned with other sent messages!');
+                        console.log('✅ Alignment difference:', alignmentDiff + 'px (within tolerance)');
+                    } else {
+                        console.log('❌ FAILED! Reply message is not aligned properly');
+                        console.log('🔍 Alignment difference:', alignmentDiff + 'px (too much)');
+                    }
+                } else {
+                    console.log('❌ Could not find reply message or regular messages for comparison');
+                }
+            }, 300);
+        }, 100);
+    } else {
+        console.log('❌ startReply function not available');
+    }
+};
+
+// Test double-click functionality
+window.testDoubleClick = function() {
+    console.log('🖱️ DOUBLE-CLICK TEST - Testing new double-click options functionality...');
+    
+    // Ensure demo login
+    if (!window.chatApp?.currentUser) {
+        console.log('👤 Demo login needed...');
+        window.demoLogin();
+    }
+    
+    // Find first message
+    const messages = document.querySelectorAll('.message[data-message-id]');
+    if (messages.length === 0) {
+        console.error('❌ No messages found');
+        return;
+    }
+    
+    const messageElement = messages[0];
+    const messageId = messageElement.getAttribute('data-message-id');
+    
+    console.log('🎯 Testing double-click on message:', messageId);
+    console.log('📝 Instructions:');
+    console.log('  1. No three dots should appear on hover');
+    console.log('  2. Double-click the message to see options');
+    console.log('  3. Options should include React and Reply');
+    
+    // Check if options button is hidden by default
+    const optionsBtn = messageElement.querySelector('.message-options-btn');
+    const optionsMenu = messageElement.querySelector('.message-options-menu');
+    
+    if (optionsBtn && optionsMenu) {
+        const isButtonHidden = !optionsBtn.classList.contains('visible');
+        const isMenuHidden = optionsMenu.classList.contains('hidden') || !optionsMenu.classList.contains('visible');
+        
+        console.log('✅ Options button hidden by default:', isButtonHidden);
+        console.log('✅ Options menu hidden by default:', isMenuHidden);
+        
+        if (isButtonHidden && isMenuHidden) {
+            console.log('🎉 SUCCESS! Options are properly hidden by default');
+            console.log('👆 Now try double-clicking the message to see options appear');
+            
+            // Simulate double-click programmatically for demo
+            setTimeout(() => {
+                console.log('🖱️ Simulating double-click...');
+                const dblClickEvent = new MouseEvent('dblclick', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                messageElement.dispatchEvent(dblClickEvent);
+                
+                setTimeout(() => {
+                    const isButtonVisible = optionsBtn.classList.contains('visible');
+                    const isMenuVisible = optionsMenu.classList.contains('visible');
+                    
+                    if (isButtonVisible && isMenuVisible) {
+                        console.log('🎉 DOUBLE-CLICK SUCCESS! Options menu appeared');
+                        console.log('✅ You can now React or Reply to the message');
+                    } else {
+                        console.log('❌ Double-click failed to show options');
+                    }
+                }, 100);
+            }, 2000);
+        } else {
+            console.log('❌ FAILED! Options are not properly hidden by default');
+        }
+    } else {
+        console.log('❌ Options elements not found');
+    }
+};
+
 // Add this to the console for easy testing
 console.log('🎯 Demo helper loaded!');
 console.log('Use window.addDemoReactions() to add sample reactions.');
@@ -457,3 +605,5 @@ console.log('🔄 TOGGLE TEST: Run window.testReactionToggle() to test toggle fu
 console.log('⚡ SIMPLE TEST: Run window.simpleToggleTest() for quick focused test!');
 console.log('👀 VISUAL TEST: Run window.visualReactionTest() to see new styling!');
 console.log('🔄 OVERLAP TEST: Run window.overlapTest() to see overlapping reactions!');
+console.log('💬 REPLY TEST: Run window.testReplyAlignment() to test reply message alignment!');
+console.log('🖱️ DOUBLE-CLICK TEST: Run window.testDoubleClick() to test new double-click options!');

@@ -1523,14 +1523,31 @@ body::after {
 
 /* Reply indicators */
 .message.is-reply {
-    margin-left: var(--space-sm);
     position: relative;
 }
 
-.message.is-reply::before {
+/* Only add left margin for received reply messages, not own reply messages */
+.message.is-reply:not(.own) {
+    margin-left: var(--space-sm);
+}
+
+/* Reply indicator line for received messages */
+.message.is-reply:not(.own)::before {
     content: '';
     position: absolute;
     left: -8px;
+    top: 20px;
+    width: 2px;
+    height: 20px;
+    background: var(--primary-color);
+    border-radius: 1px;
+}
+
+/* Reply indicator line for own messages (on the right side) */
+.message.is-reply.own::before {
+    content: '';
+    position: absolute;
+    right: -8px;
     top: 20px;
     width: 2px;
     height: 20px;

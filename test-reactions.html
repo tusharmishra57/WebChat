@@ -60,6 +60,8 @@
         
         <div class="test-buttons">
             <button class="test-button" onclick="runQuickTest()">🚀 Quick Reaction Test</button>
+            <button class="test-button" onclick="doubleClickTest()">🖱️ Double-Click Test</button>
+            <button class="test-button" onclick="replyAlignmentTest()">💬 Reply Alignment</button>
             <button class="test-button" onclick="overlapTest()">🔄 Overlap Test</button>
             <button class="test-button" onclick="visualTest()">👀 Visual Test</button>
             <button class="test-button" onclick="simpleToggleTest()">⚡ Simple Toggle</button>
@@ -152,6 +154,36 @@ Console output will appear here...
             }
         }
         
+        function doubleClickTest() {
+            log('🖱️ Running double-click test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.testDoubleClick) {
+                    appWindow.testDoubleClick();
+                    log('✅ Double-click test called - check that hover shows no dots, double-click shows options!');
+                } else {
+                    log('❌ testDoubleClick function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function replyAlignmentTest() {
+            log('💬 Running reply alignment test...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.testReplyAlignment) {
+                    appWindow.testReplyAlignment();
+                    log('✅ Reply alignment test called - check if reply messages align with sent messages!');
+                } else {
+                    log('❌ testReplyAlignment function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
         function overlapTest() {
             log('🔄 Running overlap test...');
             try {
@@ -202,7 +234,7 @@ Console output will appear here...
             setTimeout(() => {
                 log('🔍 Checking available test functions...');
                 const appWindow = iframe.contentWindow;
-                const testFunctions = ['quickReactionTest', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
+                const testFunctions = ['quickReactionTest', 'testDoubleClick', 'testReplyAlignment', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
                 testFunctions.forEach(func => {
                     if (appWindow[func]) {
                         log(`✅ ${func} is available`);

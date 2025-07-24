@@ -12,10 +12,9 @@
     /* No visual changes on hover - just show the options button */
 }
 
-/* Show options button on message hover */
+/* Remove hover-based options button - now only shows on double-click */
 .message:hover .message-options-btn {
-    opacity: 1;
-    visibility: visible;
+    /* No longer show on hover */
 }
 
 /* Hover effect on the button itself */
