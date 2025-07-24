@@ -232,9 +232,9 @@ class ChatApp {
             this.handleProfilePictureChange(e);
         });
 
-        // Logout
+        // Logout with confirmation
         document.getElementById('logout-btn')?.addEventListener('click', () => {
-            this.logout();
+            this.showLogoutConfirmation();
         });
 
         // Message input
@@ -367,6 +367,10 @@ class ChatApp {
                 const users = await response.json();
                 console.log('🌐 Received online users via HTTP:', users);
                 this.updateOnlineUsers(users);
+            } else if (response.status === 401 || response.status === 403) {
+                // Authentication failed
+                this.handleAuthError();
+                return;
             }
         } catch (error) {
             console.error('Error loading online users:', error);
@@ -1063,9 +1067,12 @@ class ChatApp {
     }
 
     async logout() {
+        console.log('🚪 Starting logout process...');
+        
         try {
             const token = localStorage.getItem('chatapp_token');
             if (token) {
+                console.log('📡 Notifying server of logout...');
                 await fetch('/api/logout', {
                     method: 'POST',
                     headers: {
@@ -1074,26 +1081,80 @@ class ChatApp {
                 });
             }
         } catch (error) {
-            console.error('Error during logout:', error);
+            console.error('❌ Error during server logout:', error);
         }
 
         // Clear local storage
+        console.log('🧹 Clearing local storage...');
         localStorage.removeItem('chatapp_token');
         localStorage.removeItem('chatapp_user');
 
         // Disconnect socket
         if (this.socket) {
+            console.log('🔌 Disconnecting socket...');
             this.socket.disconnect();
             this.socket = null;
         }
 
-        // Reset state
+        // Close all modals and reset UI state
+        console.log('🎭 Closing modals and resetting UI...');
+        this.hideAllModals();
+        if (this.isEmojiPickerOpen) {
+            this.hideEmojiPicker();
+        }
+
+        // Clear any ongoing timers
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = null;
+        }
+
+        // Reset all application state
+        console.log('🔄 Resetting application state...');
         this.currentUser = null;
         this.currentChatUser = null;
+        this.isTyping = false;
+        this.isEmojiPickerOpen = false;
+
+        // Clear message containers
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = '';
+        }
+
+        // Reset input fields
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+        }
+
+        // Hide new messages indicator
+        this.hideNewMessagesIndicator();
 
         // Show login page
+        console.log('🔐 Redirecting to login page...');
         this.showLoginPage();
+        
+        // Show success message
         showToast('Logged out successfully', 'success');
+        
+        console.log('✅ Logout completed successfully');
+    }
+
+    // Handle automatic logout when authentication fails
+    handleAuthError() {
+        console.log('🔒 Authentication error detected, logging out automatically...');
+        showToast('Session expired. Please login again.', 'warning');
+        this.logout();
+    }
+
+    // Show logout confirmation dialog
+    showLogoutConfirmation() {
+        const confirmed = confirm('Are you sure you want to logout?');
+        if (confirmed) {
+            this.logout();
+        }
     }
 
     // 😊 EMOJI PICKER FUNCTIONALITY
