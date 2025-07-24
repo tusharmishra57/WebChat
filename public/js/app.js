@@ -176,6 +176,22 @@ class ChatApp {
             showToast('Message failed: ' + error.error, 'error');
         });
 
+        // Message status updates
+        this.socket.on('message_delivered', (data) => {
+            console.log('📨 Message delivered:', data);
+            this.updateMessageStatus(data.messageId, 'delivered');
+        });
+
+        this.socket.on('message_seen', (data) => {
+            console.log('👁️ Message seen:', data);
+            this.updateMessageStatus(data.messageId, 'seen');
+        });
+
+        this.socket.on('messages_seen', (data) => {
+            console.log('👁️ Messages seen:', data);
+            this.handleMessagesSeen(data);
+        });
+
         // Typing indicators
         this.socket.on('user_typing', (data) => {
             console.log('⌨️ User typing:', data);
@@ -239,6 +255,12 @@ class ChatApp {
             this.sendMessage();
         });
 
+        // New messages indicator
+        document.getElementById('new-messages-indicator')?.addEventListener('click', () => {
+            this.scrollToBottom(true, true);
+            this.hideNewMessagesIndicator();
+        });
+
         // Emoji functionality
         this.setupEmojiPicker();
 
@@ -249,12 +271,28 @@ class ChatApp {
             }
         });
 
-        // Escape key to close modals and emoji picker
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideAllModals();
                 if (this.isEmojiPickerOpen) {
                     this.hideEmojiPicker();
+                }
+            }
+            
+            // Ctrl/Cmd + Down Arrow or End key to scroll to bottom
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'ArrowDown' || e.key === 'End')) {
+                e.preventDefault();
+                this.scrollToBottom();
+            }
+            
+            // Page Down key in chat to scroll down
+            if (e.key === 'PageDown' && document.getElementById('chat-page') && !document.getElementById('chat-page').classList.contains('hidden')) {
+                const container = document.getElementById('messages-container');
+                if (container && container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                    // If already near bottom, scroll to very bottom
+                    e.preventDefault();
+                    this.scrollToBottom();
                 }
             }
         });
@@ -283,6 +321,9 @@ class ChatApp {
             const userId = user.id || user._id;
             console.log('📱 Starting chat with user:', user.username, 'ID:', userId);
             this.loadChatMessages(userId);
+            
+            // Mark messages from this user as seen
+            this.markMessagesAsSeen(userId);
         } else {
             // Self chat
             this.currentChatUser = this.currentUser;
@@ -468,7 +509,10 @@ class ChatApp {
             this.addMessageToChat(message);
         });
 
-        this.scrollToBottom();
+        // Scroll to bottom after all messages are loaded with a delay to ensure DOM is fully updated
+        setTimeout(() => {
+            this.scrollToBottom(false, true); // Force scroll for initial load
+        }, 100);
     }
 
     addMessageToChat(message) {
@@ -496,15 +540,21 @@ class ChatApp {
                             ${message.emotionData.emotion} ${emotionEmoji}
                         </span>
                     </div>
-                    <div class="message-time">${formatTime(message.timestamp)}</div>
+                    <div class="message-time-status">
+                        <div class="message-time">${formatTime(message.timestamp)}</div>
+                        ${this.getMessageStatusHTML(message)}
+                    </div>
                 </div>
             `;
         } else if (message.messageType === 'mood_image') {
             messageContent = `
                 <div class="message-content">
-                    <img src="${message.imageUrl}" alt="Mood Image" class="mood-image">
+                    <img src="${message.imageUrl}" alt="Mood Image" class="mood-image" onload="if(window.chatApp) window.chatApp.scrollToBottom();">
                     <p class="message-text">${message.content}</p>
-                    <div class="message-time">${formatTime(message.timestamp)}</div>
+                    <div class="message-time-status">
+                        <div class="message-time">${formatTime(message.timestamp)}</div>
+                        ${this.getMessageStatusHTML(message)}
+                    </div>
                 </div>
             `;
         } else {
@@ -514,17 +564,201 @@ class ChatApp {
             messageContent = `
                 <div class="message-content">
                     <p class="message-text ${emojiOnlyClass}">${escapeHtml(message.content)}</p>
-                    <div class="message-time">${formatTime(message.timestamp)}</div>
+                    <div class="message-time-status">
+                        <div class="message-time">${formatTime(message.timestamp)}</div>
+                        ${this.getMessageStatusHTML(message)}
+                    </div>
                 </div>
             `;
         }
 
         messageElement.innerHTML = `
-            <img src="${message.sender.profilePicture || '/images/default-avatar.png'}" alt="${message.sender.username}">
+            <img src="${message.sender.profilePicture || '/images/default-avatar.png'}" alt="${message.sender.username}" onload="if(window.chatApp) window.chatApp.scrollToBottom();">
             ${messageContent}
         `;
 
         container.appendChild(messageElement);
+        
+        // Set message ID for status updates
+        messageElement.setAttribute('data-message-id', message._id);
+        
+        // Auto-scroll to bottom after adding message with slight delay to ensure DOM is updated
+        setTimeout(() => {
+            this.scrollToBottom();
+        }, 50);
+    }
+
+    // Add message and force scroll (for sent messages)
+    addMessageToChatAndScroll(message) {
+        this.addMessageToChat(message);
+        setTimeout(() => {
+            this.scrollToBottom(true, true);
+        }, 50);
+    }
+
+    // Add message with smart scroll (for received messages)
+    addMessageToChatSmart(message) {
+        this.addMessageToChat(message);
+        setTimeout(() => {
+            if (this.isAtBottom()) {
+                this.scrollToBottom();
+            } else {
+                this.showNewMessagesIndicator();
+            }
+        }, 50);
+    }
+
+    // Generate message status HTML
+    getMessageStatusHTML(message) {
+        // Only show status for own messages, not for received messages
+        if (message.sender._id !== this.currentUser.id) {
+            return '';
+        }
+
+        const status = message.status || 'sent';
+        let statusIcon = '';
+        let statusText = '';
+        let statusClass = `status-${status}`;
+
+        switch (status) {
+            case 'sent':
+                statusIcon = '✓';
+                statusText = 'Sent';
+                break;
+            case 'delivered':
+                statusIcon = '✓✓';
+                statusText = 'Delivered';
+                break;
+            case 'seen':
+                statusIcon = '✓✓';
+                statusText = 'Seen';
+                statusClass += ' double-check';
+                break;
+            default:
+                statusIcon = '⏳';
+                statusText = 'Sending...';
+                statusClass = 'status-sending';
+        }
+
+        return `
+            <div class="message-status ${statusClass}" data-status="${status}">
+                <span class="status-icon">${statusIcon}</span>
+                <span class="status-text">${statusText}</span>
+            </div>
+        `;
+    }
+
+    // Update message status in UI
+    updateMessageStatus(messageId, newStatus) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const statusElement = messageElement.querySelector('.message-status');
+        if (!statusElement) return;
+
+        let statusIcon = '';
+        let statusText = '';
+        let statusClass = `message-status status-${newStatus}`;
+
+        switch (newStatus) {
+            case 'delivered':
+                statusIcon = '✓✓';
+                statusText = 'Delivered';
+                break;
+            case 'seen':
+                statusIcon = '✓✓';
+                statusText = 'Seen';
+                statusClass += ' double-check';
+                break;
+        }
+
+        statusElement.className = statusClass;
+        statusElement.setAttribute('data-status', newStatus);
+        statusElement.innerHTML = `
+            <span class="status-icon">${statusIcon}</span>
+            <span class="status-text">${statusText}</span>
+        `;
+
+        console.log(`✅ Updated message ${messageId} status to ${newStatus}`);
+    }
+
+    // Handle multiple messages seen
+    handleMessagesSeen(data) {
+        // Update all own messages in current chat to seen
+        if (this.currentChatUser && this.currentChatUser.id === data.receiverId) {
+            const ownMessages = document.querySelectorAll('.message.own');
+            ownMessages.forEach(messageEl => {
+                const statusEl = messageEl.querySelector('.message-status');
+                if (statusEl && statusEl.getAttribute('data-status') !== 'seen') {
+                    const messageId = messageEl.getAttribute('data-message-id');
+                    this.updateMessageStatus(messageId, 'seen');
+                }
+            });
+        }
+    }
+
+    // Mark messages as seen when opening chat
+    markMessagesAsSeen(senderId) {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('mark_messages_seen', { senderId });
+            console.log('👁️ Marking messages as seen from:', senderId);
+        }
+    }
+
+    // Mark single message as seen
+    markSingleMessageAsSeen(messageId) {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('message_seen', { messageId });
+            console.log('👁️ Marking single message as seen:', messageId);
+        }
+    }
+
+    // Mark visible messages as seen when scrolling
+    markVisibleMessagesAsSeen() {
+        if (!this.currentChatUser || this.currentChatUser.id === this.currentUser.id) return;
+
+        const container = document.getElementById('messages-container');
+        if (!container) return;
+
+        // Find all received messages that are visible in viewport
+        const receivedMessages = container.querySelectorAll('.message:not(.own)');
+        const containerRect = container.getBoundingClientRect();
+        
+        receivedMessages.forEach(messageEl => {
+            const messageRect = messageEl.getBoundingClientRect();
+            const messageId = messageEl.getAttribute('data-message-id');
+            
+            // Check if message is visible in viewport
+            if (messageRect.top >= containerRect.top && 
+                messageRect.bottom <= containerRect.bottom && 
+                messageId && !messageEl.dataset.seen) {
+                
+                // Mark as seen and prevent duplicate calls
+                messageEl.dataset.seen = 'true';
+                this.markSingleMessageAsSeen(messageId);
+            }
+        });
+    }
+
+    // Setup scroll monitoring
+    setupScrollMonitoring() {
+        const container = document.getElementById('messages-container');
+        if (!container) return;
+
+        let isScrolling = false;
+        
+        container.addEventListener('scroll', () => {
+            if (!isScrolling) {
+                window.requestAnimationFrame(() => {
+                    if (this.isAtBottom()) {
+                        this.hideNewMessagesIndicator();
+                        this.markVisibleMessagesAsSeen();
+                    }
+                    isScrolling = false;
+                });
+                isScrolling = true;
+            }
+        });
     }
 
     sendMessage() {
@@ -581,9 +815,15 @@ class ChatApp {
             
             // Show message if it's from the current chat user
             if (senderId === this.currentChatUser.id) {
-                this.addMessageToChat(message);
-                this.scrollToBottom();
+                this.addMessageToChatSmart(message); // Smart scroll for received messages
                 this.playNotificationSound();
+                
+                // Mark message as seen if user is at bottom (actively viewing)
+                if (this.isAtBottom()) {
+                    setTimeout(() => {
+                        this.markSingleMessageAsSeen(message._id);
+                    }, 1000); // Delay to ensure user actually saw it
+                }
             }
         }
         
@@ -598,8 +838,7 @@ class ChatApp {
         
         // Always display sent messages in current chat
         if (this.currentChatUser) {
-            this.addMessageToChat(message);
-            this.scrollToBottom();
+            this.addMessageToChatAndScroll(message); // Force scroll for sent messages
         }
     }
 
@@ -662,11 +901,32 @@ class ChatApp {
         }
     }
 
-    scrollToBottom() {
+    scrollToBottom(smooth = true, force = false) {
         const container = document.getElementById('messages-container');
         if (container) {
-            container.scrollTop = container.scrollHeight;
+            // Only auto-scroll if user is near the bottom or if forced
+            const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+            
+            if (force || isNearBottom) {
+                if (smooth && container.scrollTo) {
+                    // Smooth scrolling for better UX
+                    container.scrollTo({
+                        top: container.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    // Fallback for older browsers or immediate scrolling
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
         }
+    }
+
+    // Check if user is at the bottom of chat
+    isAtBottom() {
+        const container = document.getElementById('messages-container');
+        if (!container) return true;
+        return container.scrollTop + container.clientHeight >= container.scrollHeight - 50;
     }
 
     showProfileModal() {

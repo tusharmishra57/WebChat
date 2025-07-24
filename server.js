@@ -106,7 +106,15 @@ const messageSchema = new mongoose.Schema({
     },
     imageUrl: String,
     timestamp: { type: Date, default: Date.now },
-    isPrivate: { type: Boolean, default: true }
+    isPrivate: { type: Boolean, default: true },
+    // Message status tracking
+    status: { 
+        type: String, 
+        enum: ['sent', 'delivered', 'seen'], 
+        default: 'sent' 
+    },
+    deliveredAt: { type: Date },
+    seenAt: { type: Date }
 });
 
 const Message = mongoose.model('Message', messageSchema);
@@ -597,7 +605,8 @@ io.on('connection', (socket) => {
                 emotionData,
                 imageUrl,
                 timestamp: new Date(),
-                isPrivate: receiverId !== senderData.userId
+                isPrivate: receiverId !== senderData.userId,
+                status: 'sent' // Initially sent
             });
 
             await message.save();
@@ -614,10 +623,24 @@ io.on('connection', (socket) => {
                 const receiverSocketId = userSockets.get(receiverId);
                 if (receiverSocketId) {
                     console.log(`📤 Sending to receiver: ${receiverId}`);
+                    
+                    // Mark as delivered and update database
+                    message.status = 'delivered';
+                    message.deliveredAt = new Date();
+                    await message.save();
+                    
                     io.to(receiverSocketId).emit('message_received', {
                         ...message.toObject(),
                         _id: message._id.toString()
                     });
+                    
+                    // Notify sender about delivery
+                    socket.emit('message_delivered', {
+                        messageId: message._id.toString(),
+                        status: 'delivered',
+                        deliveredAt: message.deliveredAt
+                    });
+                    
                 } else {
                     console.log(`📴 Receiver ${receiverId} is offline`);
                 }
@@ -657,6 +680,96 @@ io.on('connection', (socket) => {
             }
         } catch (error) {
             console.error('❌ Typing indicator error:', error);
+        }
+    });
+
+    // Handle message seen
+    socket.on('message_seen', async (data) => {
+        try {
+            console.log('👁️ Message seen:', data);
+            
+            const userData = connectedUsers.get(socket.id);
+            if (!userData) {
+                console.error('❌ User not authenticated for message_seen');
+                return;
+            }
+
+            const { messageId } = data;
+            
+            // Update message status to seen
+            const message = await Message.findByIdAndUpdate(
+                messageId,
+                { 
+                    status: 'seen',
+                    seenAt: new Date()
+                },
+                { new: true }
+            );
+
+            if (!message) {
+                console.error('❌ Message not found:', messageId);
+                return;
+            }
+
+            // Notify the sender about the seen status
+            const senderSocketId = userSockets.get(message.sender.toString());
+            if (senderSocketId && senderSocketId !== socket.id) {
+                io.to(senderSocketId).emit('message_seen', {
+                    messageId: messageId,
+                    status: 'seen',
+                    seenAt: message.seenAt,
+                    seenBy: userData.username
+                });
+            }
+
+            console.log('✅ Message marked as seen:', messageId);
+
+        } catch (error) {
+            console.error('❌ Message seen error:', error);
+        }
+    });
+
+    // Bulk mark messages as seen when user opens chat
+    socket.on('mark_messages_seen', async (data) => {
+        try {
+            console.log('👁️ Marking messages as seen:', data);
+            
+            const userData = connectedUsers.get(socket.id);
+            if (!userData) {
+                console.error('❌ User not authenticated for mark_messages_seen');
+                return;
+            }
+
+            const { senderId } = data;
+            
+            // Mark all unseen messages from this sender as seen
+            const updatedMessages = await Message.updateMany(
+                {
+                    sender: senderId,
+                    receiver: userData.userId,
+                    status: { $ne: 'seen' }
+                },
+                {
+                    status: 'seen',
+                    seenAt: new Date()
+                }
+            );
+
+            // Notify sender about seen status
+            const senderSocketId = userSockets.get(senderId);
+            if (senderSocketId) {
+                io.to(senderSocketId).emit('messages_seen', {
+                    receiverId: userData.userId,
+                    receiverName: userData.username,
+                    seenAt: new Date(),
+                    count: updatedMessages.modifiedCount
+                });
+            }
+
+            console.log(`✅ Marked ${updatedMessages.modifiedCount} messages as seen from ${senderId}`);
+
+        } catch (error) {
+            console.error('❌ Mark messages seen error:', error);
         }
     });
 

@@ -1211,6 +1211,138 @@ body::after {
     to { transform: rotate(360deg); }
 }
 
+/* New Messages Indicator */
+.new-messages-indicator {
+    position: fixed;
+    bottom: 120px;
+    right: 20px;
+    z-index: 100;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    padding: var(--space-sm) var(--space-md);
+    box-shadow: var(--shadow-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+.new-messages-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.new-messages-indicator:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.new-messages-indicator i {
+    font-size: 1rem;
+}
+
+.new-messages-count {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Message Status Indicators */
+.message-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+.message.own .message-status {
+    justify-content: flex-end;
+}
+
+.status-icon {
+    font-size: 0.7rem;
+    transition: var(--transition-fast);
+}
+
+.status-sent .status-icon {
+    color: var(--text-muted);
+}
+
+.status-delivered .status-icon {
+    color: var(--info-color);
+}
+
+.status-seen .status-icon {
+    color: var(--success-color);
+}
+
+.status-text {
+    font-size: 0.7rem;
+    margin-left: 2px;
+}
+
+/* Double check marks for seen messages */
+.double-check {
+    position: relative;
+}
+
+.double-check::after {
+    content: '✓';
+    position: absolute;
+    left: 6px;
+    top: 0;
+}
+
+/* Loading status animation */
+.status-sending .status-icon {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Message timestamp with status */
+.message-time-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    margin-top: 4px;
+}
+
+.message.own .message-time-status {
+    flex-direction: row-reverse;
+}
+
+/* Compact status for mobile */
+@media (max-width: 480px) {
+    .status-text {
+        display: none;
+    }
+    
+    .message-status {
+        gap: 2px;
+    }
+    
+    .status-icon {
+        font-size: 0.65rem;
+    }
+}
+
 /* Responsive Design - Mobile First */
 @media (max-width: 480px) {
     .chat-actions {
