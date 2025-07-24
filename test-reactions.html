@@ -60,6 +60,7 @@
         
         <div class="test-buttons">
             <button class="test-button" onclick="runQuickTest()">🚀 Quick Reaction Test</button>
+            <button class="test-button" onclick="debugReactions()">🐛 Debug Production</button>
             <button class="test-button" onclick="doubleClickTest()">🖱️ Double-Click Test</button>
             <button class="test-button" onclick="replyAlignmentTest()">💬 Reply Alignment</button>
             <button class="test-button" onclick="overlapTest()">🔄 Overlap Test</button>
@@ -154,6 +155,21 @@ Console output will appear here...
             }
         }
         
+        function debugReactions() {
+            log('🐛 Running production debug...');
+            try {
+                const appWindow = iframe.contentWindow;
+                if (appWindow.debugReactions) {
+                    appWindow.debugReactions();
+                    log('✅ Debug function called - check console for detailed diagnostics!');
+                } else {
+                    log('❌ debugReactions function not found in iframe');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
         function doubleClickTest() {
             log('🖱️ Running double-click test...');
             try {
@@ -234,7 +250,7 @@ Console output will appear here...
             setTimeout(() => {
                 log('🔍 Checking available test functions...');
                 const appWindow = iframe.contentWindow;
-                const testFunctions = ['quickReactionTest', 'testDoubleClick', 'testReplyAlignment', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
+                const testFunctions = ['quickReactionTest', 'debugReactions', 'testDoubleClick', 'testReplyAlignment', 'overlapTest', 'visualReactionTest', 'simpleToggleTest', 'testReactionToggle', 'inspectMessages', 'demoLogin', 'testReactions'];
                 testFunctions.forEach(func => {
                     if (appWindow[func]) {
                         log(`✅ ${func} is available`);

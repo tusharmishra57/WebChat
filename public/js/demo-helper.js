@@ -591,6 +591,118 @@ window.testDoubleClick = function() {
     }
 };
 
+// Debug reactions in production environment
+window.debugReactions = function() {
+    console.log('🐛 PRODUCTION REACTION DEBUG - Comprehensive diagnostic...');
+    console.log('🌍 Environment:', window.location.hostname);
+    console.log('🔗 Full URL:', window.location.href);
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('chatapp_token');
+    console.log('🔐 Token exists:', !!token);
+    console.log('👤 Current user:', window.chatApp?.currentUser);
+    
+    // Check messages
+    const messages = document.querySelectorAll('.message[data-message-id]');
+    console.log('📨 Total messages found:', messages.length);
+    
+    if (messages.length === 0) {
+        console.log('❌ No messages found - try logging in first');
+        return;
+    }
+    
+    // Test with first message
+    const messageElement = messages[0];
+    const messageId = messageElement.getAttribute('data-message-id');
+    console.log('🎯 Testing with message ID:', messageId);
+    
+    // Check message structure
+    const reactionsContainer = messageElement.querySelector('.message-reactions');
+    console.log('📦 Reactions container exists:', !!reactionsContainer);
+    
+    if (reactionsContainer) {
+        console.log('📦 Container HTML:', reactionsContainer.outerHTML);
+        console.log('📦 Container children:', reactionsContainer.children.length);
+    }
+    
+    // Check if message is in cache
+    const messageInCache = window.chatApp?.messageCache?.has(messageId);
+    console.log('💾 Message in cache:', messageInCache);
+    
+    if (messageInCache) {
+        const cachedMessage = window.chatApp.messageCache.get(messageId);
+        console.log('💾 Cached message reactions:', cachedMessage.reactions);
+    }
+    
+    // Test API endpoint
+    console.log('🧪 Testing reaction API...');
+    
+    const testReaction = async () => {
+        try {
+            const testEmoji = '❤️';
+            console.log(`📡 Attempting to add reaction ${testEmoji} to message ${messageId}`);
+            
+            // Check if we're using mock or real API
+            if (!window.chatApp?.currentUser?.id) {
+                console.log('🧪 No authenticated user - will use mock reaction');
+                window.chatApp.addMockReaction(messageId, testEmoji);
+                return;
+            }
+            
+            // Try real API call
+            const response = await fetch(`/api/messages/${messageId}/react`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ emoji: testEmoji })
+            });
+            
+            console.log('📡 API Response status:', response.status);
+            console.log('📡 API Response headers:', [...response.headers.entries()]);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ API Success:', result);
+                console.log('✅ Returned reactions:', result.reactions);
+            } else {
+                const errorText = await response.text();
+                console.log('❌ API Error:', response.status, errorText);
+                console.log('🧪 Falling back to mock reaction...');
+                window.chatApp.addMockReaction(messageId, testEmoji);
+            }
+        } catch (error) {
+            console.log('❌ Network Error:', error.message);
+            console.log('🧪 Falling back to mock reaction...');
+            window.chatApp.addMockReaction(messageId, testEmoji);
+        }
+    };
+    
+    // Run the test
+    testReaction();
+    
+    // Check CSS loading
+    console.log('🎨 Checking CSS...');
+    const messageOptionsCSS = document.querySelector('link[href*="message-options"]');
+    console.log('🎨 Message options CSS loaded:', !!messageOptionsCSS);
+    
+    // Check if styles are applied
+    const testReactionItem = document.querySelector('.reaction-item');
+    if (testReactionItem) {
+        const styles = window.getComputedStyle(testReactionItem);
+        console.log('🎨 Reaction item styles:', {
+            display: styles.display,
+            width: styles.width,
+            height: styles.height,
+            borderRadius: styles.borderRadius,
+            background: styles.background
+        });
+    }
+    
+    console.log('🐛 Debug complete - check the logs above for issues');
+};
+
 // Add this to the console for easy testing
 console.log('🎯 Demo helper loaded!');
 console.log('Use window.addDemoReactions() to add sample reactions.');
@@ -607,3 +719,4 @@ console.log('👀 VISUAL TEST: Run window.visualReactionTest() to see new stylin
 console.log('🔄 OVERLAP TEST: Run window.overlapTest() to see overlapping reactions!');
 console.log('💬 REPLY TEST: Run window.testReplyAlignment() to test reply message alignment!');
 console.log('🖱️ DOUBLE-CLICK TEST: Run window.testDoubleClick() to test new double-click options!');
+console.log('🐛 PRODUCTION DEBUG: Run window.debugReactions() to debug production issues!');

@@ -1877,6 +1877,8 @@ class ChatApp {
         console.log(`🔍 Current user:`, this.currentUser);
         console.log(`🔍 Token exists: ${!!localStorage.getItem('chatapp_token')}`);
         console.log(`🔍 Message cache has message:`, this.messageCache.has(messageId));
+        console.log(`🌍 Environment: ${window.location.hostname}`);
+        console.log(`🔗 Base URL: ${window.location.origin}`);
         
         // Check if we have authentication - if not, use mock for demo
         if (!this.currentUser?.id) {
@@ -1886,7 +1888,10 @@ class ChatApp {
         }
         
         try {
-            const response = await fetch(`/api/messages/${messageId}/react`, {
+            const apiUrl = `/api/messages/${messageId}/react`;
+            console.log(`📡 Making API call to: ${window.location.origin}${apiUrl}`);
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('chatapp_token')}`,
@@ -1896,6 +1901,7 @@ class ChatApp {
             });
 
             console.log(`📡 Reaction API response status: ${response.status}`);
+            console.log(`📡 Response headers:`, [...response.headers.entries()]);
 
             if (response.ok) {
                 const updatedMessage = await response.json();
@@ -1904,6 +1910,18 @@ class ChatApp {
                 
                 // Update reactions immediately
                 this.updateMessageReactions(messageId, updatedMessage.reactions);
+                
+                // Double-check that the reaction appeared
+                setTimeout(() => {
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                    const reactionItems = messageElement?.querySelectorAll('.reaction-item');
+                    console.log(`🔍 Post-update check: ${reactionItems?.length || 0} reactions visible`);
+                    
+                    if (!reactionItems || reactionItems.length === 0) {
+                        console.warn('⚠️ No reactions visible after update - forcing refresh');
+                        this.updateMessageReactions(messageId, updatedMessage.reactions);
+                    }
+                }, 100);
                 
                 // Add to recent emojis for quick access
                 if (window.modernEmojiPicker) {
