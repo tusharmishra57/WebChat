@@ -453,9 +453,9 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// 🎨 CARTOON FILTER API ENDPOINT - Using Media.io Online Anime/Cartoon Filters
+// 🎨 SKETCH FILTER API ENDPOINT - Using Oyyi Sketch API
 app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
-    console.log('🎨 Media.io Anime/Cartoon Filter API called');
+    console.log('🎨 Oyyi Sketch API called');
     
     try {
         if (!req.file) {
@@ -472,14 +472,14 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filename: req.file.filename
         });
 
-        console.log('🎨 Applying Media.io anime/cartoon filter...');
+        console.log('🎨 Applying Oyyi sketch conversion...');
         
         const fs = require('fs');
         const path = require('path');
         const FormData = require('form-data');
         
-        // Create output filename with higher quality extension
-        const outputFilename = `cartoon_${Date.now()}.png`;  // PNG for better quality
+        // Create output filename for sketch
+        const outputFilename = `sketch_${Date.now()}.jpg`;  // JPEG for sketch
         const outputPath = path.join(__dirname, 'public', 'uploads', outputFilename);
         
         // Ensure uploads directory exists
@@ -488,106 +488,29 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        console.log('🎨 Media.io Anime/Cartoon Filter parameters:');
-        console.log('   • Style: Anime/Cartoon transformation');
-        console.log('   • Provider: Media.io (MioCreate) API');
-        console.log('   • Processing: AI-powered anime/cartoon filters');
-        console.log('   • Output format: JPEG/PNG');
+        console.log('🎨 Oyyi Sketch API parameters:');
+        console.log('   • Style: Pencil sketch conversion');
+        console.log('   • Provider: Oyyi Sketch API');
+        console.log('   • Processing: AI-powered sketch transformation');
+        console.log('   • Output format: JPEG');
         console.log('   • Input size:', req.file.size, 'bytes');
         
-        // Step 1: Get upload URL from Media.io API
-        console.log('📤 Step 1: Getting upload URL...');
-        const uploadUrlResponse = await axios.post('https://devapi.miocreate.com/v1/source/upload-url', {
-            file_name: req.file.filename
-        }, {
+        // Prepare form data for Oyyi Sketch API
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(req.file.path));
+        
+        // Call Oyyi Sketch API
+        const response = await axios.post('https://oyyi.xyz/api/image/sketch', formData, {
             headers: {
-                'Content-Type': 'application/json'
+                ...formData.getHeaders(),
+                'Accept': 'application/json'
             },
-            timeout: 30000
-        });
-        
-        if (uploadUrlResponse.data.code !== 200) {
-            throw new Error(`Media.io upload URL request failed: ${uploadUrlResponse.data.message}`);
-        }
-        
-        const { upload_url, key } = uploadUrlResponse.data.data;
-        console.log('✅ Upload URL obtained');
-        
-        // Step 2: Upload file to Media.io
-        console.log('📤 Step 2: Uploading file...');
-        const fileBuffer = fs.readFileSync(req.file.path);
-        await axios.put(upload_url, fileBuffer, {
-            headers: {
-                'Content-Type': req.file.mimetype
-            },
-            timeout: 60000
-        });
-        console.log('✅ File uploaded successfully');
-        
-        // Step 3: Apply anime/cartoon filter (using style transformation)
-        console.log('🎨 Step 3: Applying anime/cartoon filter...');
-        const filterResponse = await axios.post('https://devapi.miocreate.com/v1/task/style-transfer', {
-            source_key: key,
-            style_type: 'anime', // Anime style transformation
-            quality: 'hd' // High quality mode
-        }, {
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            timeout: 30000
-        });
-        
-        if (filterResponse.data.code !== 200) {
-            throw new Error(`Media.io filter request failed: ${filterResponse.data.message}`);
-        }
-        
-        const taskId = filterResponse.data.data.task_id;
-        console.log('✅ Filter task created, ID:', taskId);
-        
-        // Step 4: Poll for task completion
-        console.log('⏳ Step 4: Waiting for processing...');
-        let attempts = 0;
-        const maxAttempts = 30; // 30 attempts with 2-second intervals = 60 seconds max
-        let taskResult = null;
-        
-        while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-            
-            const statusResponse = await axios.get(`https://devapi.miocreate.com/v1/task/detail?id=${taskId}`, {
-                timeout: 10000
-            });
-            
-            if (statusResponse.data.code === 200) {
-                const task = statusResponse.data.data;
-                if (task.status === 0) { // Completed
-                    taskResult = task;
-                    break;
-                } else if (task.status === 1 || task.status === 2) { // Waiting or Processing
-                    console.log(`⏳ Task status: ${task.status === 1 ? 'Waiting' : 'Processing'}...`);
-                    attempts++;
-                } else {
-                    throw new Error(`Task failed with status: ${task.status}, message: ${task.message}`);
-                }
-            } else {
-                attempts++;
-            }
-        }
-        
-        if (!taskResult) {
-            throw new Error('Task timeout - processing took too long');
-        }
-        
-        console.log('✅ Processing completed');
-        
-        // Step 5: Download the result
-        const resultUrl = taskResult.additional_data.merge_url;
-        const response = await axios.get(resultUrl, {
-            responseType: 'arraybuffer',
-            timeout: 30000
+            responseType: 'arraybuffer',  // Important: get binary data
+            timeout: 60000  // 60 second timeout
         });
         
         if (response.status !== 200) {
-            throw new Error(`Failed to download result: ${response.status}`);
+            throw new Error(`Oyyi Sketch API returned status ${response.status}`);
         }
         
         // Save the cartoon result with quality validation
@@ -598,7 +521,7 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
         console.log('📊 Output file stats:');
         console.log('   • Size:', outputStats.size, 'bytes');
         console.log('   • Quality ratio:', (outputStats.size / req.file.size * 100).toFixed(1) + '%');
-        console.log('   • Format: JPEG/PNG');
+        console.log('   • Format: JPEG');
         
         // Clean up uploaded file
         try {
@@ -607,19 +530,19 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             console.warn('⚠️ Could not clean up uploaded file:', cleanupError.message);
         }
 
-        console.log('✅ Media.io anime/cartoon filter applied successfully!');
+        console.log('✅ Oyyi sketch conversion applied successfully!');
 
         res.json({
             success: true,
-            message: 'Media.io anime/cartoon filter applied successfully!',
+            message: 'Oyyi sketch conversion applied successfully!',
             filteredImage: `/uploads/${outputFilename}`,
             appliedEffects: {
-                style: 'Anime/Cartoon',
-                type: 'AI-powered anime/cartoon transformation',
-                provider: 'Media.io (MioCreate) API',
-                processing: 'Professional anime/cartoon filter'
+                style: 'Pencil Sketch',
+                type: 'AI-powered sketch transformation',
+                provider: 'Oyyi Sketch API',
+                processing: 'Professional sketch conversion'
             },
-            provider: 'Media.io Online Anime/Cartoon Filters (Free)'
+            provider: 'Oyyi Sketch API (Free)'
         });
 
     } catch (error) {
@@ -645,12 +568,12 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             } else if (error.response.status === 413) {
                 errorMessage = 'Image file too large (max 10MB)';
             } else if (error.response.status === 500) {
-                errorMessage = 'Media.io API server error - please try again';
+                errorMessage = 'Oyyi Sketch API server error - please try again';
             }
         } else if (error.code === 'ECONNABORTED') {
             errorMessage = 'Request timeout - please try with a smaller image';
         } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'Cannot connect to Media.io API - please check internet connection';
+            errorMessage = 'Cannot connect to Oyyi Sketch API - please check internet connection';
         }
         
         res.status(500).json({
@@ -661,45 +584,36 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
     }
 });
 
-// 🧪 TEST CARTOON FILTER API ENDPOINT
+// 🧪 TEST SKETCH FILTER API ENDPOINT
 app.get('/api/test-mood-filter', async (req, res) => {
-    console.log('🧪 Testing Media.io Anime/Cartoon Filter API configuration...');
+    console.log('🧪 Testing Oyyi Sketch API configuration...');
     
     res.json({
         success: true,
-        message: 'Media.io Online Anime/Cartoon Filters API is ready - FREE!',
+        message: 'Oyyi Sketch API is ready - FREE!',
         config: {
-            provider: 'Media.io (MioCreate) API',
-            endpoints: {
-                upload: 'https://devapi.miocreate.com/v1/source/upload-url',
-                filter: 'https://devapi.miocreate.com/v1/task/style-transfer',
-                status: 'https://devapi.miocreate.com/v1/task/detail'
-            },
+            provider: 'Oyyi Sketch API',
+            endpoint: 'https://oyyi.xyz/api/image/sketch',
             cost: 'FREE',
             features: [
-                'Multiple anime/cartoon styles available',
-                'High-quality AI-powered transformation',
-                'Professional anime filter effects',
+                'AI-powered sketch conversion',
+                'High-quality pencil sketch effect',
+                'Professional sketch transformation',
                 'Supports various image formats',
-                'HD quality output option',
-                'Fast processing (typically 10-30 seconds)',
-                'No registration required for basic usage'
-            ],
-            availableStyles: [
-                'Anime', 'Comic', 'Watercolor', 'Dragonball',
-                'Ghibli', 'Retro Animate', 'American Comic',
-                'Niji-Novel', 'Game Style', 'Digital Illustration'
+                'Fast processing (typically 5-15 seconds)',
+                'No registration required',
+                'Simple single-step API'
             ],
             parameters: {
-                style: 'Anime (default)',
-                qualityMode: 'HD enabled',
-                outputFormat: 'JPEG/PNG',
+                style: 'Pencil Sketch',
+                algorithm: 'AI-powered sketch conversion',
+                outputFormat: 'JPEG',
                 cameraResolution: '1280x720 (ideal)',
                 maxFileSize: '10MB',
                 timeout: '60 seconds',
-                processing: 'Multi-step AI anime/cartoon transformation'
+                processing: 'Single-step sketch transformation'
             },
-            note: 'Using Media.io\'s professional anime/cartoon filters with multiple style options!'
+            note: 'Using Oyyi\'s professional sketch conversion API for artistic pencil sketch effects!'
         }
     });
 });
