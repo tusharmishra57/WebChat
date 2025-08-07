@@ -375,54 +375,60 @@
 
 
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
+/* Tablet Responsive */
+@media (max-width: 768px) and (min-width: 481px) {
     .message-options-btn {
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
     }
     
     .message:not(.own) .message-options-btn {
-        right: 2px;
+        right: -4px;
     }
     
     .message.own .message-options-btn {
-        left: 2px;
+        left: -4px;
     }
     
     .message-options-menu {
-        min-width: 160px;
+        min-width: 170px;
     }
     
     .message:not(.own) .message-options-menu {
-        right: -180px;
+        right: -190px;
     }
     
     .message.own .message-options-menu {
-        left: -180px;
+        left: -190px;
     }
     
     .message-reactions {
-        left: -2px; /* Left corner on tablets */
-        bottom: -10px; /* Slightly less overlap on tablets */
+        left: -3px;
+        bottom: -10px;
     }
     
     .message.own .message-reactions {
-        left: -2px; /* Left corner for own messages on tablets */
+        left: -3px;
     }
     
     .reaction-picker {
         position: fixed;
         top: auto;
-        bottom: 120px;
+        bottom: 130px;
         left: 50%;
         transform: translateX(-50%);
     }
     
     .quick-reaction-btn {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         font-size: 18px;
+    }
+    
+    .reaction-item {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
     }
 }
 
@@ -433,25 +439,39 @@
     }
     
     .message:not(.own) .message-options-btn {
-        right: -28px;
+        right: -6px;
     }
     
     .message.own .message-options-btn {
-        left: -28px;
+        left: -6px;
+    }
+    
+    .message-options-menu {
+        min-width: 150px;
+        font-size: 0.85rem;
+    }
+    
+    .message:not(.own) .message-options-menu {
+        right: -160px;
+    }
+    
+    .message.own .message-options-menu {
+        left: -160px;
     }
     
     .message-reactions {
-        left: -2px; /* Left corner on mobile */
-        bottom: -8px; /* Good overlap on mobile */
+        left: -2px;
+        bottom: -8px;
     }
     
     .message.own .message-reactions {
-        left: -2px; /* Left corner for own messages on mobile */
+        left: -2px;
     }
     
     .option-btn {
         padding: 10px 12px;
         font-size: 0.85rem;
+        gap: 8px;
     }
     
     .quick-reactions {
@@ -459,19 +479,32 @@
     }
     
     .quick-reaction-btn {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         font-size: 16px;
     }
     
     .reaction-item {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
     }
     
     .reaction-emoji {
-        font-size: 10px;
+        font-size: 11px;
+    }
+    
+    .reaction-picker {
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px;
+    }
+    
+    .more-reactions-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
     }
 }
 

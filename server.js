@@ -453,9 +453,9 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// 🎨 CARTOON FILTER API ENDPOINT - Using Oyyi Cartoon Effect API
+// 🎨 CARTOON FILTER API ENDPOINT - Using Media.io Online Anime/Cartoon Filters
 app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (req, res) => {
-    console.log('🎨 Cartoon Filter API called - Using Oyyi API');
+    console.log('🎨 Media.io Anime/Cartoon Filter API called');
     
     try {
         if (!req.file) {
@@ -472,7 +472,7 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             filename: req.file.filename
         });
 
-        console.log('🎨 Applying cartoon effect using Oyyi API...');
+        console.log('🎨 Applying Media.io anime/cartoon filter...');
         
         const fs = require('fs');
         const path = require('path');
@@ -488,29 +488,106 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
         
-        console.log('🎨 Cartoon effect parameters (ENHANCED):');
-        console.log('   • Style: High-quality cartoon effect');
-        console.log('   • Provider: Oyyi Cartoon API');
-        console.log('   • Processing: Direct transformation with quality enhancement');
-        console.log('   • Output format: PNG (lossless quality)');
+        console.log('🎨 Media.io Anime/Cartoon Filter parameters:');
+        console.log('   • Style: Anime/Cartoon transformation');
+        console.log('   • Provider: Media.io (MioCreate) API');
+        console.log('   • Processing: AI-powered anime/cartoon filters');
+        console.log('   • Output format: JPEG/PNG');
         console.log('   • Input size:', req.file.size, 'bytes');
         
-        // Prepare form data for Oyyi API
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(req.file.path));
-        
-        // Call Oyyi Cartoon API
-        const response = await axios.post('https://oyyi.xyz/api/image/cartoon', formData, {
+        // Step 1: Get upload URL from Media.io API
+        console.log('📤 Step 1: Getting upload URL...');
+        const uploadUrlResponse = await axios.post('https://devapi.miocreate.com/v1/source/upload-url', {
+            file_name: req.file.filename
+        }, {
             headers: {
-                ...formData.getHeaders(),
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
-            responseType: 'arraybuffer',  // Important: get binary data
-            timeout: 30000  // 30 second timeout
+            timeout: 30000
+        });
+        
+        if (uploadUrlResponse.data.code !== 200) {
+            throw new Error(`Media.io upload URL request failed: ${uploadUrlResponse.data.message}`);
+        }
+        
+        const { upload_url, key } = uploadUrlResponse.data.data;
+        console.log('✅ Upload URL obtained');
+        
+        // Step 2: Upload file to Media.io
+        console.log('📤 Step 2: Uploading file...');
+        const fileBuffer = fs.readFileSync(req.file.path);
+        await axios.put(upload_url, fileBuffer, {
+            headers: {
+                'Content-Type': req.file.mimetype
+            },
+            timeout: 60000
+        });
+        console.log('✅ File uploaded successfully');
+        
+        // Step 3: Apply anime/cartoon filter (using style transformation)
+        console.log('🎨 Step 3: Applying anime/cartoon filter...');
+        const filterResponse = await axios.post('https://devapi.miocreate.com/v1/task/style-transfer', {
+            source_key: key,
+            style_type: 'anime', // Anime style transformation
+            quality: 'hd' // High quality mode
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: 30000
+        });
+        
+        if (filterResponse.data.code !== 200) {
+            throw new Error(`Media.io filter request failed: ${filterResponse.data.message}`);
+        }
+        
+        const taskId = filterResponse.data.data.task_id;
+        console.log('✅ Filter task created, ID:', taskId);
+        
+        // Step 4: Poll for task completion
+        console.log('⏳ Step 4: Waiting for processing...');
+        let attempts = 0;
+        const maxAttempts = 30; // 30 attempts with 2-second intervals = 60 seconds max
+        let taskResult = null;
+        
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+            
+            const statusResponse = await axios.get(`https://devapi.miocreate.com/v1/task/detail?id=${taskId}`, {
+                timeout: 10000
+            });
+            
+            if (statusResponse.data.code === 200) {
+                const task = statusResponse.data.data;
+                if (task.status === 0) { // Completed
+                    taskResult = task;
+                    break;
+                } else if (task.status === 1 || task.status === 2) { // Waiting or Processing
+                    console.log(`⏳ Task status: ${task.status === 1 ? 'Waiting' : 'Processing'}...`);
+                    attempts++;
+                } else {
+                    throw new Error(`Task failed with status: ${task.status}, message: ${task.message}`);
+                }
+            } else {
+                attempts++;
+            }
+        }
+        
+        if (!taskResult) {
+            throw new Error('Task timeout - processing took too long');
+        }
+        
+        console.log('✅ Processing completed');
+        
+        // Step 5: Download the result
+        const resultUrl = taskResult.additional_data.merge_url;
+        const response = await axios.get(resultUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
         });
         
         if (response.status !== 200) {
-            throw new Error(`Oyyi API returned status ${response.status}`);
+            throw new Error(`Failed to download result: ${response.status}`);
         }
         
         // Save the cartoon result with quality validation
@@ -521,7 +598,7 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
         console.log('📊 Output file stats:');
         console.log('   • Size:', outputStats.size, 'bytes');
         console.log('   • Quality ratio:', (outputStats.size / req.file.size * 100).toFixed(1) + '%');
-        console.log('   • Format: PNG (lossless)');
+        console.log('   • Format: JPEG/PNG');
         
         // Clean up uploaded file
         try {
@@ -530,19 +607,19 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             console.warn('⚠️ Could not clean up uploaded file:', cleanupError.message);
         }
 
-        console.log('✅ Cartoon effect applied successfully!');
+        console.log('✅ Media.io anime/cartoon filter applied successfully!');
 
         res.json({
             success: true,
-            message: 'Cartoon effect applied successfully!',
+            message: 'Media.io anime/cartoon filter applied successfully!',
             filteredImage: `/uploads/${outputFilename}`,
             appliedEffects: {
-                style: 'Cartoon',
-                type: 'Cartoon transformation',
-                provider: 'Oyyi Cartoon API',
-                processing: 'Direct image transformation'
+                style: 'Anime/Cartoon',
+                type: 'AI-powered anime/cartoon transformation',
+                provider: 'Media.io (MioCreate) API',
+                processing: 'Professional anime/cartoon filter'
             },
-            provider: 'Oyyi Cartoon API (Free)'
+            provider: 'Media.io Online Anime/Cartoon Filters (Free)'
         });
 
     } catch (error) {
@@ -568,12 +645,12 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
             } else if (error.response.status === 413) {
                 errorMessage = 'Image file too large (max 10MB)';
             } else if (error.response.status === 500) {
-                errorMessage = 'Oyyi API server error - please try again';
+                errorMessage = 'Media.io API server error - please try again';
             }
         } else if (error.code === 'ECONNABORTED') {
             errorMessage = 'Request timeout - please try with a smaller image';
         } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'Cannot connect to Oyyi API - please check internet connection';
+            errorMessage = 'Cannot connect to Media.io API - please check internet connection';
         }
         
         res.status(500).json({
@@ -586,34 +663,43 @@ app.post('/api/mood-filter', authenticateToken, upload.single('image'), async (r
 
 // 🧪 TEST CARTOON FILTER API ENDPOINT
 app.get('/api/test-mood-filter', async (req, res) => {
-    console.log('🧪 Testing Cartoon Filter API configuration...');
+    console.log('🧪 Testing Media.io Anime/Cartoon Filter API configuration...');
     
     res.json({
         success: true,
-        message: 'Enhanced Cartoon Filter API is ready - completely FREE!',
+        message: 'Media.io Online Anime/Cartoon Filters API is ready - FREE!',
         config: {
-            provider: 'Oyyi Cartoon API (Enhanced)',
-            endpoint: 'https://oyyi.xyz/api/image/cartoon',
+            provider: 'Media.io (MioCreate) API',
+            endpoints: {
+                upload: 'https://devapi.miocreate.com/v1/source/upload-url',
+                filter: 'https://devapi.miocreate.com/v1/task/style-transfer',
+                status: 'https://devapi.miocreate.com/v1/task/detail'
+            },
             cost: 'FREE',
             features: [
-                'High-quality cartoon effect transformation',
-                'Enhanced image resolution processing',
-                'PNG output for lossless quality',
-                'Improved camera capture (720p/1080p)',
-                'Quality validation and monitoring',
-                'No registration required',
-                'Supports JPEG, PNG, WebP, BMP, TIFF'
+                'Multiple anime/cartoon styles available',
+                'High-quality AI-powered transformation',
+                'Professional anime filter effects',
+                'Supports various image formats',
+                'HD quality output option',
+                'Fast processing (typically 10-30 seconds)',
+                'No registration required for basic usage'
+            ],
+            availableStyles: [
+                'Anime', 'Comic', 'Watercolor', 'Dragonball',
+                'Ghibli', 'Retro Animate', 'American Comic',
+                'Niji-Novel', 'Game Style', 'Digital Illustration'
             ],
             parameters: {
-                style: 'Enhanced cartoon transformation',
-                inputQuality: '95% JPEG compression',
-                outputFormat: 'PNG (lossless)',
+                style: 'Anime (default)',
+                qualityMode: 'HD enabled',
+                outputFormat: 'JPEG/PNG',
                 cameraResolution: '1280x720 (ideal)',
                 maxFileSize: '10MB',
-                timeout: '30 seconds',
-                processing: 'Direct transformation with quality enhancement'
+                timeout: '60 seconds',
+                processing: 'Multi-step AI anime/cartoon transformation'
             },
-            note: 'ENHANCED: High-quality cartoon filter with improved resolution and PNG output!'
+            note: 'Using Media.io\'s professional anime/cartoon filters with multiple style options!'
         }
     });
 });

@@ -358,7 +358,7 @@ class ChatController {
                 this.showProcessingState();
                 // showToast('🎨 Applying MOOD effect...', 'info'); - removed
                 
-                // Apply MOOD filter using Oyyi API
+                // Apply MOOD filter using Media.io Online Anime/Cartoon Filters
                 const filteredImageUrl = await this.applyMoodFilter(blob);
                 
                 this.displayMoodResult(filteredImageUrl);
@@ -371,10 +371,10 @@ class ChatController {
         }, 'image/jpeg', 0.95);  // Increased quality from 90% to 95%
     }
 
-    // 🎨 MOOD FILTER INTEGRATION - Using Oyyi API
+    // 🎨 MOOD FILTER INTEGRATION - Using Media.io Online Anime/Cartoon Filters
     async applyMoodFilter(imageBlob) {
         try {
-            console.log('🎨 Applying MOOD filter using Oyyi API...');
+            console.log('🎨 Applying MOOD filter using Media.io Online Anime/Cartoon Filters...');
             // showToast('🎨 Processing MOOD effect...', 'info'); - removed
 
             const formData = new FormData();
@@ -396,7 +396,7 @@ class ChatController {
             }
 
             if (result.filteredImage) {
-                console.log('✅ MOOD effect applied successfully using Oyyi API');
+                console.log('✅ MOOD effect applied successfully using Media.io Online Anime/Cartoon Filters');
                 // showToast(`✅ ${result.message}`, 'success'); - removed
                 return result.filteredImage;
             } else {

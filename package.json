@@ -1,7 +1,7 @@
 {
   "name": "chat-app",
   "version": "1.0.0",
-  "description": "A real-time chat application with emotion detection and cartoon filters using Oyyi API",
+  "description": "A real-time chat application with emotion detection and cartoon filters using Media.io Online Anime/Cartoon Filters",
   "main": "server.js",
   "engines": {
     "node": ">=14.0.0"

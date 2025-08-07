@@ -1669,34 +1669,6 @@ body::after {
     }
 }
 
-/* Dark mode support (system preference) */
-@media (prefers-color-scheme: dark) {
-    /* Already dark by default */
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-    
-    body::before,
-    body::after {
-        animation: none !important;
-    }
-}
-
-/* High contrast support */
-@media (prefers-contrast: high) {
-    :root {
-        --glass-bg: rgba(255, 255, 255, 0.15);
-        --glass-border: rgba(255, 255, 255, 0.3);
-        --text-muted: rgba(255, 255, 255, 0.8);
-    }
-}
-
 /* Print styles */
 @media print {
     body::before,
